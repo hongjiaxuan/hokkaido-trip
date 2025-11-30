@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hokkaido-trip-v3';
+const CACHE_NAME = 'hokkaido-trip-v4';
 const urlsToCache = [
   './',
   './index.html',
