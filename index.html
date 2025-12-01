@@ -472,7 +472,27 @@
         function initMemo() { const txt = localStorage.getItem('hk_memo_v2') || ''; if(document.getElementById('memo-area')) { document.getElementById('memo-area').value = txt; renderMemoLinks(txt); } }
         function saveMemo() { const txt = document.getElementById('memo-area').value; localStorage.setItem('hk_memo_v2', txt); renderMemoLinks(txt); alert('已儲存'); }
         function renderMemoLinks(txt) { const matches = txt.match(/(https?:\/\/[^\s]+)/g); const container = document.getElementById('memo-links'); if(matches) { container.innerHTML = matches.map(url => `<a href="${url}" target="_blank" class="block truncate text-xs text-blue-500 bg-blue-50 p-2 rounded hover:bg-blue-100"><i class="fas fa-link mr-1"></i>${url}</a>`).join(''); } else { container.innerHTML = '<span class="text-[10px] text-gray-300">尚無連結</span>'; } }
-        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then((reg) => console.log('Service worker registered.', reg)).catch((err) => console.log('Service worker registration failed:', err)); }); }
+        if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            // 加上 ?v=時間戳，強迫瀏覽器去檢查 sw.js 有沒有更新
+            navigator.serviceWorker.register('./sw.js?v=' + new Date().getTime())
+                .then((reg) => {
+                    console.log('Service Worker 註冊成功:', reg);
+                    // 如果發現更新，提示使用者
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    console.log('發現新版本，請重新整理！');
+                                }
+                            }
+                        };
+                    };
+                })
+                .catch((err) => console.log('註冊失敗:', err));
+        });
+    }
 
         // NEW: Image Modal Functions
         function openImageModal(src) {
