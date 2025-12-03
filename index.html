@@ -85,6 +85,9 @@
         /* Error Input Animation */
         .input-error { border-color: #ef4444 !important; animation: shake 0.3s ease-in-out; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        /* Progress Bar */
+        #progress-bar { transition: width 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex justify-center overflow-hidden font-sans">
@@ -114,9 +117,9 @@
             <!-- SECTION: PLAN (行程) -->
             <section id="plan" class="tab-content active h-full">
                 <div class="flex flex-col h-full p-4 pb-0">
-                    <div class="flex overflow-x-auto hide-scrollbar gap-2 mb-4 pb-1 shrink-0" id="date-scroll-container"></div>
-                    <div id="plan-weather-card" class="mb-4 shrink-0"></div>
-                    <div id="itinerary-list" class="space-y-4 pb-20 flex-1 overflow-y-auto hide-scrollbar pr-1"></div>
+                    <div class="flex overflow-x-auto hide-scrollbar gap-2 mb-3 pb-1" id="date-scroll-container"></div>
+                    <div id="plan-weather-card" class="mb-3"></div>
+                    <div id="itinerary-list" class="space-y-4 pb-24 flex-1 overflow-y-auto hide-scrollbar pr-1"></div>
                     
                     <button onclick="openEditModal(currentSelectedDayIndex, -1)" class="fab-btn absolute bottom-6 right-4 w-14 h-14 bg-muji-accent text-white rounded-full shadow-xl flex items-center justify-center z-30 hover:bg-opacity-90 border-2 border-white">
                         <i class="fas fa-plus text-2xl"></i>
@@ -371,14 +374,166 @@
 
     <!-- JAVASCRIPT -->
     <script>
-        // --- GLOBAL VARIABLES ---
+        // --- GLOBAL VARIABLES (只宣告一次) ---
+        let currentShoppingFilter = 'all';
         let itineraryData = [];
-        let currentDayIdx = null; let currentEvtIdx = null;
-        let currentExpenseId = null; let deleteTarget = null; let deleteExpenseId = null;
+        let currentDayIdx = null; 
+        let currentEvtIdx = null;
+        let currentExpenseId = null; 
+        let deleteTarget = null; 
+        let deleteExpenseId = null;
         let currentSelectedDayIndex = 0;
-        let currentShoppingId = null; let deleteShoppingId = null;
-        let deleteChecklistCatIdx = null; let deleteChecklistItemIdx = null;
+        let currentShoppingId = null; 
+        let deleteShoppingId = null;
+        let deleteChecklistCatIdx = null; 
+        let deleteChecklistItemIdx = null;
 
+        // ★ 將 switchDay 移到全域作用域（只定義一次）
+        function switchDay(dayIdx) {
+            if (typeof dayIdx !== 'number' || dayIdx < 0 || dayIdx >= itineraryData.length) return;
+            if (currentSelectedDayIndex === dayIdx) return;
+            currentSelectedDayIndex = dayIdx;
+            renderDateSelector();
+            renderPlan();
+            try {
+                const container = document.getElementById('date-scroll-container');
+                const btns = container ? container.querySelectorAll('button') : [];
+                const btn = btns[dayIdx];
+                if (btn && typeof btn.scrollIntoView === 'function') {
+                    btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }
+            } catch (e) { console.warn('switchDay scroll error', e); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initItinerary(); 
+            initChecklist(); 
+            initShoppingList(); 
+            initWallet(); 
+            setupNav();
+            renderDateSelector(); 
+            renderPlan();
+
+            setInterval(updateRealtimeHighlight, 60000);
+            document.querySelectorAll('input[type="number"]').forEach(input => {
+                input.addEventListener('focus', function() { this.select(); });
+            });
+            loadFromCloud();
+        });
+
+        // ...existing code...
+        
+        // --- CLOUD SYNC CONFIG (雲端同步設定) ---
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzFHcJNlhnffOhycydVA9NJgrPNxWyMyWfMU0k_9DTpplQUZSsVG_sGd__MXd1Dapv3/exec";
+
+        // 讀取雲端資料（修復版本）
+        async function loadFromCloud() {
+            if (!GAS_API_URL) {
+                console.log('雲端同步已禁用');
+                return;
+            }
+            
+            showToast("正在同步雲端資料...", "info");
+            
+            try {
+                // 加上時間戳記避免快取
+                const url = GAS_API_URL + "?t=" + new Date().getTime();
+                const res = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+                
+                const result = await res.json();
+                
+                if (result.status !== 'success' || !result.data) {
+                    console.warn('雲端回應異常:', result);
+                    showToast("雲端無新資料", "normal");
+                    return;
+                }
+                
+                const data = result.data;
+                let hasUpdate = false;
+                
+                // 更新 LocalStorage（如果雲端有資料）
+                if (data.hk_itinerary_v20) { 
+                    localStorage.setItem('hk_itinerary_v20', JSON.stringify(data.hk_itinerary_v20)); 
+                    hasUpdate = true; 
+                }
+                if (data.hk_wallet_v20) { 
+                    localStorage.setItem('hk_wallet_v20', JSON.stringify(data.hk_wallet_v20)); 
+                    hasUpdate = true; 
+                }
+                if (data.hk_shopping_v20) { 
+                    localStorage.setItem('hk_shopping_v20', JSON.stringify(data.hk_shopping_v20)); 
+                    hasUpdate = true; 
+                }
+                if (data.hk_checks_v20) { 
+                    localStorage.setItem('hk_checks_v20', JSON.stringify(data.hk_checks_v20)); 
+                    hasUpdate = true; 
+                }
+                
+                if (hasUpdate) {
+                    // 重新初始化畫面以顯示新資料
+                    initItinerary();
+                    renderPlan();
+                    renderExpenseList();
+                    renderShoppingList();
+                    renderChecklist();
+                    showToast("資料同步完成！✨", "success");
+                } else {
+                    showToast("雲端目前無新資料", "normal");
+                }
+                
+            } catch (e) {
+                console.error("同步失敗:", e);
+                showToast(`同步失敗: ${e.message}`, "error");
+            }
+        }
+
+        // 上傳資料到雲端（修復版本）
+        async function saveToCloud(key, dataObj) {
+            if (!GAS_API_URL) {
+                console.log('未設定 GAS_API_URL，跳過雲端同步');
+                return;
+            }
+            
+            try {
+                const payload = {
+                    key: key,
+                    value: JSON.stringify(dataObj)  // ✅ 確保是字符串
+                };
+                
+                const res = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                
+                const result = await res.json();
+                
+                if (result.status === 'success') {
+                    console.log('✅ 已上傳至雲端:', key);
+                } else {
+                    console.warn('⚠️ 上傳到雲端失敗:', result);
+                }
+                
+            } catch (err) {
+                console.error('❌ 上傳失敗:', err.message);
+                // 靜默失敗，不中斷應用流程
+            }
+        }
         // --- TOAST NOTIFICATION SYSTEM ---
         function showToast(message, type = 'normal') {
             const container = document.getElementById('toast-container');
@@ -481,17 +636,11 @@
         ];
         
         const defaultShoppingList = [ { id: 'm1', type: 'drug', name: '大正製藥 口內炎貼片', desc: '貼的含類固醇，吸附力好', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=口內炎' }, { id: 'm2', type: 'drug', name: 'Traful 軟膏 PRO QUICK', desc: '抗炎成分，塗抹型', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=Traful' }, { id: 'm3', type: 'drug', name: 'Chocola BB 口內炎噴霧', desc: '殺菌修復，薄荷味', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=BB' }, { id: 'm4', type: 'drug', name: '小林製藥 液體絆創膏', desc: '防水隱形OK繃', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=液體絆' }, { id: 'm5', type: 'drug', name: 'EVE Quick DX', desc: '速效止痛', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=EVE' }, { id: 'm6', type: 'drug', name: 'Loxonin S Premium', desc: '強效止痛', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=Loxonin' }, { id: 'm7', type: 'drug', name: 'PAIR 痘痘藥膏', desc: '消炎殺菌', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=PAIR' }, { id: 'm8', type: 'drug', name: 'Aneron 暈車藥', desc: '長效持續', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=Aneron' }, { id: 'm9', type: 'drug', name: '哆啦A夢 暈車藥', desc: '兒童可用，汽水味', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=哆啦A夢' }, { id: 'm10', type: 'drug', name: 'DHC 速攻藍莓 V-MAX', desc: '護眼，花青素增量', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=DHC藍莓' }, { id: 'm11', type: 'drug', name: '龍角散 Direct', desc: '免水服用，水蜜桃/薄荷', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=龍角散' }, { id: 'm12', type: 'drug', name: 'DHC 乳酸菌/益生菌', desc: '整腸消化', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=DHC益生菌' }, { id: 'm13', type: 'drug', name: 'DHC 葉黃素/蝦紅素', desc: '抗藍光，抗疲勞', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=DHC葉黃' }, { id: 'm14', type: 'drug', name: 'ROIHI-TSUBOKO', desc: '溫感穴位貼片', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=穴位貼' }, { id: 'm15', type: 'drug', name: '合利他命 EX Plus', desc: '緩解眼睛疲勞、肩頸僵硬', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=合利他命' }, { id: 'm16', type: 'drug', name: '樂敦 V 頂級紅鑽', desc: '改善乾眼、老花', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=V紅鑽' }, { id: 'm17', type: 'drug', name: '齒磨撫子 牙膏', desc: '小蘇打美白', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=齒磨撫子' }, { id: 's1', type: 'souvenir', name: '白色戀人', desc: '經典巧克力夾心', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=白色戀人' }, { id: 's2', type: 'souvenir', name: 'HORI 哈密瓜果凍', desc: '夕張哈密瓜口味', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=HORI' }, { id: 's3', type: 'souvenir', name: 'PRESS BUTTER SAND', desc: '北海道限定玉米口味', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=ButterSand' }, { id: 's4', type: 'souvenir', name: '北菓樓 開拓小米菓', desc: '海鮮口味米菓', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=北菓樓' }, { id: 's5', type: 'souvenir', name: 'LeTAO 雙層起司蛋糕', desc: '必買經典', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=LeTAO' }, { id: 's6', type: 'souvenir', name: 'KINOTOYA 起司塔', desc: '新千歲機場必吃', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=KINOTOYA' }, { id: 's7', type: 'souvenir', name: 'Milk Stand 牛奶', desc: '各地牧場直送', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=MilkStand' }, { id: 's8', type: 'souvenir', name: '六花亭 奶油夾心', desc: '蘭姆葡萄口味', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=六花亭' }, { id: 's9', type: 'souvenir', name: '六花亭 酒糖', desc: '寶石般的外觀', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=酒糖' }, { id: 's10', type: 'souvenir', name: 'Oh! 烤玉米', desc: '札幌大通公園名物', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=烤玉米' }, { id: 'o1', type: 'other', name: 'Canon SELPHY CP1500', desc: '小型印相機', done: false, img: 'https://placehold.co/100x100/e5e7eb/4b5563?text=Canon' } ];
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initItinerary(); initChecklist(); initShoppingList(); initWallet(); setupNav();
-            renderDateSelector(); renderPlan();
-            setInterval(updateRealtimeHighlight, 60000);
-            
-            // Init Wallet inputs focus
+             // Init Wallet inputs focus
             document.querySelectorAll('input[type="number"]').forEach(input => {
                 input.addEventListener('focus', function() { this.select(); });
             });
-        });
+            loadFromCloud();
 
         function initItinerary() { const stored = localStorage.getItem('hk_itinerary_v20'); if (stored) { itineraryData = JSON.parse(stored); } else { itineraryData = JSON.parse(JSON.stringify(defaultItinerary)); } }
         
@@ -502,14 +651,22 @@
             setTimeout(() => document.getElementById('confirm-box').classList.remove('scale-95'), 10);
         }
 
-        function renderDateSelector() { const container = document.getElementById('date-scroll-container'); let html = ''; itineraryData.forEach((day, idx) => { const isActive = idx === currentSelectedDayIndex; const activeClass = isActive ? 'bg-muji-accent text-white shadow-md' : 'bg-white text-gray-500 hover:bg-gray-50'; const dateShort = day.date.split('/')[1]; html += `<button onclick="switchDay(${idx})" class="flex-shrink-0 w-16 h-14 rounded-xl flex flex-col items-center justify-center transition-all ${activeClass} border border-transparent ${!isActive ? 'border-gray-100' : ''}"><span class="text-xs font-bold leading-none mb-1">Day ${day.day}</span><span class="text-[10px] font-mono leading-none">${dateShort}</span></button>`; }); container.innerHTML = html; }
-        function switchDay(idx) { currentSelectedDayIndex = idx; renderDateSelector(); renderPlan(); }
-        
+        function renderDateSelector() { const container = document.getElementById('date-scroll-container'); let html = ''; itineraryData.forEach((day, idx) => { const isActive = idx === currentSelectedDayIndex; const activeClass = isActive ? 'bg-muji-accent text-white shadow-md' : 'bg-white text-gray-500 hover:bg-gray-50'; const dateShort = day.date.split('/')[1]; html += `<button onclick="switchDay(${idx})" class="flex-shrink-0 w-14 h-12 rounded-xl flex flex-col items-center justify-center transition-all ${activeClass} border border-transparent ${!isActive ? 'border-gray-100' : ''}"><span class="text-xs font-bold leading-none mb-1">Day ${day.day}</span><span class="text-[10px] font-mono leading-none">${dateShort}</span></button>`; }); container.innerHTML = html; }
+
         function renderPlan() { 
             const container = document.getElementById('itinerary-list'); 
             const weatherCard = document.getElementById('plan-weather-card'); 
             const day = itineraryData[currentSelectedDayIndex]; 
-            weatherCard.innerHTML = `<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-400 text-lg"><i class="fas ${day.weather.icon}"></i></div><div><div class="text-sm font-bold text-gray-700">${day.date}</div><div class="text-[10px] text-gray-400">${day.weather.desc}</div></div></div><div class="text-xl font-bold text-gray-600 font-mono">${day.weather.temp}</div></div>`; 
+            weatherCard.innerHTML = `<div class="bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between" style="max-width:360px;margin:6px auto">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-400 text-lg"><i class="fas ${day.weather.icon}"></i></div>
+                    <div>
+                        <div class="text-sm font-bold text-gray-700">${day.date}</div>
+                        <div class="text-[10px] text-gray-400">${day.weather.desc}</div>
+                    </div>
+                </div>
+                <div class="text-lg font-bold text-gray-600 font-mono">${day.weather.temp}</div>
+            </div>`; 
             
             let eventsHtml = ''; 
             day.events.forEach((evt, evtIdx) => { 
@@ -580,7 +737,13 @@
         function removeHighlight(card) { const innerCard = card.querySelector('.event-card'); const icon = card.querySelector('.indicator-icon'); innerCard.classList.remove('event-active'); icon.classList.remove('animate-pulse-slow'); icon.classList.remove('bg-muji-highlight'); icon.querySelector('i').style.color = ''; }
         function setupNav() { const btns = document.querySelectorAll('.nav-btn'); const sections = document.querySelectorAll('.tab-content'); btns.forEach(btn => { btn.addEventListener('click', () => { btns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); sections.forEach(s => { s.classList.remove('active'); if(s.id === btn.dataset.target) s.classList.add('active'); }); if(btn.dataset.target === 'lists') updateChecklistProgress(); }); }); }
         
-        function deleteEvent() { if (currentDayIdx === null || currentEvtIdx === null || currentEvtIdx < 0) return; deleteTarget = 'itinerary'; document.getElementById('confirm-msg').innerText="確定刪除此行程？"; document.getElementById('confirm-modal').classList.remove('hidden'); setTimeout(() => document.getElementById('confirm-box').classList.remove('scale-95'), 10); }
+        function deleteEvent() { 
+            if (currentDayIdx === null || currentEvtIdx === null || currentEvtIdx < 0) return; 
+            deleteTarget = 'itinerary'; 
+            document.getElementById('confirm-msg').innerText="確定刪除此行程？"; 
+            document.getElementById('confirm-modal').classList.remove('hidden'); 
+            setTimeout(() => document.getElementById('confirm-box').classList.remove('scale-95'), 10); 
+        }
         
         function closeConfirmModal() { 
             const box = document.getElementById('confirm-box');
@@ -590,13 +753,59 @@
         }
         
         function executeDelete() { 
-            if (deleteTarget === 'itinerary') { try { itineraryData[currentDayIdx].events.splice(currentEvtIdx, 1); localStorage.setItem('hk_itinerary_v20', JSON.stringify(itineraryData)); renderPlan(); closeModal(); closeViewModal(); showToast('行程已刪除'); } catch(e) { console.error(e); } } 
-            else if (deleteTarget === 'itinerary-reset') { localStorage.removeItem('hk_itinerary_v20'); initItinerary(); renderDateSelector(); renderPlan(); showToast('行程已重置'); } 
-            else if (deleteTarget === 'expense-clear') { localStorage.removeItem('hk_wallet_v20'); renderExpenseList(); showToast('資料已清除'); } 
-            else if (deleteTarget === 'expense-single') { let expenses = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); expenses = expenses.filter(e => e.id !== deleteExpenseId); localStorage.setItem('hk_wallet_v20', JSON.stringify(expenses)); renderExpenseList(); showToast('紀錄已刪除'); } 
-            else if (deleteTarget === 'shopping') { let list = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]'); list = list.filter(i => i.id !== deleteShoppingId); localStorage.setItem('hk_shopping_v20', JSON.stringify(list)); renderShoppingList(); showToast('項目已刪除'); } 
-            else if (deleteTarget === 'checklist-cat') { const list = JSON.parse(localStorage.getItem('hk_checks_v20')); list.splice(deleteChecklistCatIdx, 1); localStorage.setItem('hk_checks_v20', JSON.stringify(list)); renderChecklist(); showToast('分類已刪除'); } 
-            else if (deleteTarget === 'checklist-item') { const list = JSON.parse(localStorage.getItem('hk_checks_v20')); list[deleteChecklistCatIdx].items.splice(deleteChecklistItemIdx, 1); localStorage.setItem('hk_checks_v20', JSON.stringify(list)); renderChecklist(); showToast('項目已刪除'); } 
+            if (deleteTarget === 'itinerary') { 
+                try { 
+                    itineraryData[currentDayIdx].events.splice(currentEvtIdx, 1); 
+                    localStorage.setItem('hk_itinerary_v20', JSON.stringify(itineraryData));
+                    saveToCloud('hk_itinerary_v20', itineraryData);  // ★ 新增同步
+                    renderPlan(); 
+                    closeModal(); 
+                    closeViewModal(); 
+                    showToast('行程已刪除並同步'); 
+                } catch(e) { console.error(e); } 
+            } 
+            else if (deleteTarget === 'itinerary-reset') { 
+                localStorage.removeItem('hk_itinerary_v20'); 
+                initItinerary(); 
+                renderDateSelector(); 
+                renderPlan(); 
+                showToast('行程已重置'); 
+            } 
+            else if (deleteTarget === 'expense-clear') { 
+                localStorage.removeItem('hk_wallet_v20'); 
+                saveToCloud('hk_wallet_v20', []);  // ★ 新增同步（清空）
+                renderExpenseList(); 
+                showToast('資料已清除並同步'); 
+            } 
+            else if (deleteTarget === 'expense-single') { 
+                let expenses = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); 
+                expenses = expenses.filter(e => e.id !== deleteExpenseId); 
+                localStorage.setItem('hk_wallet_v20', JSON.stringify(expenses));
+                saveToCloud('hk_wallet_v20', expenses);  // ★ 新增同步
+                renderExpenseList(); 
+                showToast('紀錄已刪除並同步'); 
+            } 
+            else if (deleteTarget === 'shopping') { 
+                let list = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]'); 
+                list = list.filter(i => i.id !== deleteShoppingId); 
+                localStorage.setItem('hk_shopping_v20', JSON.stringify(list)); 
+                renderShoppingList(); 
+                showToast('項目已刪除'); 
+            } 
+            else if (deleteTarget === 'checklist-cat') { 
+                const list = JSON.parse(localStorage.getItem('hk_checks_v20')); 
+                list.splice(deleteChecklistCatIdx, 1); 
+                localStorage.setItem('hk_checks_v20', JSON.stringify(list));
+                renderChecklist(); 
+                showToast('分類已刪除'); 
+            } 
+            else if (deleteTarget === 'checklist-item') { 
+                const list = JSON.parse(localStorage.getItem('hk_checks_v20')); 
+                list[deleteChecklistCatIdx].items.splice(deleteChecklistItemIdx, 1); 
+                localStorage.setItem('hk_checks_v20', JSON.stringify(list)); 
+                renderChecklist(); 
+                showToast('項目已刪除'); 
+            } 
             closeConfirmModal(); 
         }
         
@@ -825,7 +1034,8 @@
                     date: expenseDate 
                 }); 
                 try { 
-                    localStorage.setItem('hk_wallet_v20', JSON.stringify(data)); 
+                    localStorage.setItem('hk_wallet_v20', JSON.stringify(data));
+                    saveToCloud('hk_wallet_v20', data); 
                     document.getElementById('expense-item').value = ''; 
                     document.getElementById('expense-price').value = ''; 
                     fileInput.value = ''; 
@@ -958,9 +1168,10 @@
                     list[idx].date = dateVal;
                     if (newImg) list[idx].img = newImg; 
                     localStorage.setItem('hk_wallet_v20', JSON.stringify(list)); 
+                    saveToCloud('hk_wallet_v20', list);  // ★ 新增同步
                     renderExpenseList(); 
                     closeExpenseEditModal(); 
-                    showToast("修改成功", 'success');
+                    showToast("修改成功並同步", 'success');
                 } 
             }; 
             
@@ -1043,7 +1254,7 @@
                 const diffClass = diff >= 0 ? 'text-green-600' : 'text-red-500'; 
                 const diffSign = diff >= 0 ? '+' : ''; 
                 summaryHtml += `<div class="flex justify-between items-center py-1 border-b border-gray-50 last:border-0"><span class="font-bold text-gray-700 w-16">${m}</span><span class="text-xs text-gray-400">墊 NT$${paid.toLocaleString()}</span><span class="font-mono ${diffClass} w-24 text-right">${diffSign} $${Math.round(diff).toLocaleString()}</span></div>`; 
-            }); 
+            });
             
             document.getElementById('split-summary').innerHTML = summaryHtml; 
             document.getElementById('split-average').innerText = `NT$${Math.round(average).toLocaleString()}`; 
@@ -1082,13 +1293,27 @@
         
         // --- UPDATED: CHECKLIST LOGIC (Collapsible, Default Closed) ---
         function initChecklist() {
-            // Set isOpen: false by default for new data
-            const rawData = (typeof defaultChecklistData !== 'undefined') ? defaultChecklistData.map(cat => ({ category: cat.category, isOpen: false, items: cat.items.map(txt => ({ txt: txt, done: false })) })) : [];
+            // 設定預設清單分類
+            const defaultChecklistData = [
+                { category: '證件', items: ['護照', '簽證', '台灣身分證'] },
+                { category: '行李', items: ['冬季外套', '發熱衣', '防水靴', '帽子/手套/圍巾', '滑雪板/雪鞋'] },
+                { category: '電子用品', items: ['護照掃描檔', '飯店訂單截圖', '行程表', '充電器', '行動電源', '轉接器'] },
+                { category: '盥洗用品', items: ['牙刷', '牙膏', '洗髮精', '沐浴乳', '保濕霜'] }
+            ];
+            
+            const rawData = defaultChecklistData.map(cat => ({ 
+                category: cat.category, 
+                isOpen: false, 
+                items: cat.items.map(txt => ({ txt: txt, done: false })) 
+            }));
+            
             let stored = JSON.parse(localStorage.getItem('hk_checks_v20'));
-            // Ensure isOpen property exists, default to false if missing
+            
+            // 確保 isOpen 屬性存在
             if(stored && Array.isArray(stored)) {
                 stored.forEach(g => { if(g.isOpen === undefined) g.isOpen = false; });
             }
+            
             if(!stored || !Array.isArray(stored) || stored.length === 0) { 
                 stored = rawData; 
                 localStorage.setItem('hk_checks_v20', JSON.stringify(stored)); 
@@ -1169,23 +1394,164 @@
             addCheckItem(catIdx, input);
         }
 
-        function toggleCheck(catIdx, itemIdx) { const list = JSON.parse(localStorage.getItem('hk_checks_v20')); if (list && list[catIdx] && list[catIdx].items[itemIdx]) { list[catIdx].items[itemIdx].done = !list[catIdx].items[itemIdx].done; localStorage.setItem('hk_checks_v20', JSON.stringify(list)); renderChecklist(); } }
-        function addCheckItem(catIdx, input) { const val = input.value.trim(); if(!val) return; const list = JSON.parse(localStorage.getItem('hk_checks_v20')); if (list && list[catIdx]) { list[catIdx].items.push({ txt: val, done: false }); localStorage.setItem('hk_checks_v20', JSON.stringify(list)); renderChecklist(); input.value = ''; } }
-        function confirmDeleteCheckItem(catIdx, itemIdx) { deleteTarget = 'checklist-item'; deleteChecklistCatIdx = catIdx; deleteChecklistItemIdx = itemIdx; document.getElementById('confirm-msg').innerText="確定刪除此項目？"; document.getElementById('confirm-modal').classList.remove('hidden'); setTimeout(() => document.getElementById('confirm-box').classList.remove('scale-95'), 10); }
-        function confirmDeleteCheckCategory(catIdx) { deleteTarget = 'checklist-cat'; deleteChecklistCatIdx = catIdx; document.getElementById('confirm-msg').innerText="確定刪除此分類？"; document.getElementById('confirm-modal').classList.remove('hidden'); setTimeout(() => document.getElementById('confirm-box').classList.remove('scale-95'), 10); }
-        function openAddCategoryModal() { document.getElementById('new-category-name').value = ''; const modal = document.getElementById('add-category-modal'); modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); modal.querySelector('div').classList.add('scale-100'); }, 10); }
-        function closeAddCategoryModal() { const modal = document.getElementById('add-category-modal'); modal.classList.add('opacity-0'); modal.querySelector('div').classList.remove('scale-100'); modal.querySelector('div').classList.add('scale-95'); setTimeout(() => { modal.classList.add('hidden'); }, 250); }
-        function saveNewCategory() { const name = document.getElementById('new-category-name').value.trim(); if(!name) return; const list = JSON.parse(localStorage.getItem('hk_checks_v20') || '[]'); list.push({ category: name, items: [] }); localStorage.setItem('hk_checks_v20', JSON.stringify(list)); renderChecklist(); closeAddCategoryModal(); showToast('分類已新增', 'success'); }
-        function updateChecklistProgress(done, total) { const pct = total === 0 ? 0 : Math.round((done / total) * 100); document.getElementById('progress-bar').style.width = `${pct}%`; document.getElementById('progress-text').innerText = `${pct}%`; }
-        
-        let currentShoppingFilter = 'all';
-        function initShoppingList() { let stored = JSON.parse(localStorage.getItem('hk_shopping_v20')); if (!stored) { stored = JSON.parse(JSON.stringify(defaultShoppingList)); localStorage.setItem('hk_shopping_v20', JSON.stringify(stored)); } renderShoppingList(); }
-        function renderShoppingList() { const list = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]'); const container = document.getElementById('shopping-container'); let filteredList = list; if (currentShoppingFilter !== 'all') { filteredList = list.filter(item => item.type === currentShoppingFilter); } if (filteredList.length === 0) { container.innerHTML = '<div class="text-center text-gray-400 text-sm py-4">沒有相關項目</div>'; return; } let html = ''; filteredList.forEach((item) => { const opacityClass = item.done ? 'opacity-50 grayscale' : ''; const lineThrough = item.done ? 'line-through' : ''; const checkIcon = item.done ? 'fa-check-circle text-green-500' : 'fa-circle text-gray-200'; html += `<div class="flex items-start bg-white p-3 rounded-lg border border-gray-100 shadow-sm ${opacityClass} transition-all relative group"><div class="w-16 h-16 rounded-md bg-gray-100 bg-cover bg-center shrink-0 cursor-pointer" style="background-image: url('${item.img}')" onclick="openImageModal('${item.img}')"></div><div class="flex-1 px-3 min-w-0"><h4 class="text-sm font-bold text-gray-800 ${lineThrough} truncate">${item.name}</h4><p class="text-[10px] text-gray-500 mt-1 leading-tight line-clamp-2">${item.desc}</p></div><div class="flex flex-col items-center gap-2 ml-2"><button onclick="toggleShoppingCheck('${item.id}')" class="text-xl focus:outline-none"><i class="fas ${checkIcon}"></i></button><div class="flex gap-2 mt-1"><button onclick="openShoppingModal('${item.id}')" class="text-gray-400 hover:text-muji-accent"><i class="fas fa-pen text-xs"></i></button><button onclick="confirmDeleteShopping('${item.id}')" class="text-gray-400 hover:text-red-500"><i class="fas fa-trash text-xs"></i></button></div></div></div>`; }); container.innerHTML = html; }
-        function filterShopping(type) { currentShoppingFilter = type; const buttons = document.querySelectorAll('#view-shopping button'); buttons.forEach(btn => { if(btn.parentElement.classList.contains('overflow-x-auto')) { if(btn.textContent === (type==='all'?'全部':(type==='drug'?'藥妝':(type==='souvenir'?'伴手禮':'其他')))) { btn.className = "px-3 py-1 bg-muji-accent text-white rounded-full text-xs whitespace-nowrap shadow-sm"; } else { btn.className = "px-3 py-1 bg-white border border-gray-200 text-gray-500 rounded-full text-xs whitespace-nowrap"; } } }); renderShoppingList(); }
-        function toggleShoppingCheck(id) { const list = JSON.parse(localStorage.getItem('hk_shopping_v20')); const item = list.find(i => i.id === id); if (item) { item.done = !item.done; localStorage.setItem('hk_shopping_v20', JSON.stringify(list)); renderShoppingList(); } }
-        function openShoppingModal(id) { currentShoppingId = id; const modal = document.getElementById('shopping-edit-modal'); const title = document.getElementById('shopping-modal-title'); document.getElementById('shop-name').value = ''; document.getElementById('shop-type').value = 'drug'; document.getElementById('shop-desc').value = ''; document.getElementById('shop-photo').value = ''; if(id) { const list = JSON.parse(localStorage.getItem('hk_shopping_v20')); const item = list.find(i => i.id === id); if(item) { title.innerText = "編輯必買"; document.getElementById('shop-name').value = item.name; document.getElementById('shop-type').value = item.type; document.getElementById('shop-desc').value = item.desc; } } else { title.innerText = "新增必買"; } modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); modal.querySelector('div').classList.add('scale-100'); }, 10); }
-        function closeShoppingModal() { const modal = document.getElementById('shopping-edit-modal'); modal.classList.add('opacity-0'); modal.querySelector('div').classList.remove('scale-100'); modal.querySelector('div').classList.add('scale-95'); setTimeout(() => { modal.classList.add('hidden'); currentShoppingId = null; }, 250); }
-        function saveShoppingItem() { const name = document.getElementById('shop-name').value.trim(); const type = document.getElementById('shop-type').value; const desc = document.getElementById('shop-desc').value.trim(); const fileInput = document.getElementById('shop-photo'); if(!name) { alert('請輸入商品名稱'); return; } const processSave = (img) => { const list = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]'); if (currentShoppingId) { const idx = list.findIndex(i => i.id === currentShoppingId); if (idx > -1) { list[idx].name = name; list[idx].type = type; list[idx].desc = desc; if(img) list[idx].img = img; } } else { const newItem = { id: 'c' + Date.now(), type: type, name: name, desc: desc, done: false, img: img || 'https://placehold.co/100x100/e5e7eb/4b5563?text=No+Img' }; list.unshift(newItem); } try { localStorage.setItem('hk_shopping_v20', JSON.stringify(list)); renderShoppingList(); closeShoppingModal(); if(currentShoppingFilter !== 'all' && currentShoppingFilter !== type) { filterShopping(type); } } catch(e) { alert("儲存失敗，可能是圖片太大"); } }; if(fileInput.files[0]) { const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); const ctx = c.getContext('2d'); const maxW = 300; const scale = maxW / img.width; c.width = maxW; c.height = img.height * scale; ctx.drawImage(img, 0, 0, c.width, c.height); processSave(c.toDataURL('image/jpeg', 0.6)); }; img.src = e.target.result; }; reader.readAsDataURL(fileInput.files[0]); } else { processSave(null); } }
+        function toggleCheck(catIdx, itemIdx) { 
+            const list = JSON.parse(localStorage.getItem('hk_checks_v20')); 
+            if (list && list[catIdx] && list[catIdx].items[itemIdx]) { 
+                list[catIdx].items[itemIdx].done = !list[catIdx].items[itemIdx].done; 
+                localStorage.setItem('hk_checks_v20', JSON.stringify(list)); 
+                renderChecklist(); 
+            } 
+        }
+
+        function initShoppingList() { 
+            let stored = JSON.parse(localStorage.getItem('hk_shopping_v20')); 
+            if (!stored) { 
+                stored = JSON.parse(JSON.stringify(defaultShoppingList)); 
+                localStorage.setItem('hk_shopping_v20', JSON.stringify(stored)); 
+            } 
+            renderShoppingList(); 
+        }
+        function renderShoppingList() { 
+            const list = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]'); 
+            const container = document.getElementById('shopping-container'); 
+            let filteredList = list; 
+            if (currentShoppingFilter !== 'all') { 
+                filteredList = list.filter(item => item.type === currentShoppingFilter); 
+            } 
+            if (filteredList.length === 0) { 
+                container.innerHTML = '<div class="text-center text-gray-400 text-sm py-4">沒有相關項目</div>'; 
+                return; 
+            } 
+            let html = ''; 
+            filteredList.forEach((item) => { 
+                const opacityClass = item.done ? 'opacity-50 grayscale' : ''; 
+                const lineThrough = item.done ? 'line-through' : ''; 
+                const checkIcon = item.done ? 'fa-check-circle text-green-500' : 'fa-circle text-gray-200'; 
+                html += `<div class="flex items-start bg-white p-3 rounded-lg border border-gray-100 shadow-sm ${opacityClass} transition-all relative group"><div class="w-16 h-16 rounded-md bg-gray-100 bg-cover bg-center shrink-0 cursor-pointer" style="background-image: url('${item.img}')" onclick="openImageModal('${item.img}')"></div><div class="flex-1 px-3 min-w-0"><h4 class="text-sm font-bold text-gray-800 ${lineThrough} truncate">${item.name}</h4><p class="text-[10px] text-gray-500 mt-1 leading-tight line-clamp-2">${item.desc}</p></div><div class="flex flex-col items-center gap-2 ml-2"><button onclick="toggleShoppingCheck('${item.id}')" class="text-xl focus:outline-none"><i class="fas ${checkIcon}"></i></button><div class="flex gap-2 mt-1"><button onclick="openShoppingModal('${item.id}')" class="text-gray-400 hover:text-muji-accent"><i class="fas fa-pen text-xs"></i></button><button onclick="confirmDeleteShopping('${item.id}')" class="text-gray-400 hover:text-red-500"><i class="fas fa-trash text-xs"></i></button></div></div></div>`; 
+            }); 
+            container.innerHTML = html; 
+        }
+        function filterShopping(type) { 
+            currentShoppingFilter = type; 
+            const buttons = document.querySelectorAll('#view-shopping button'); 
+            buttons.forEach(btn => { 
+                if(btn.parentElement.classList.contains('overflow-x-auto')) { 
+                    if(btn.textContent === (type==='all'?'全部':(type==='drug'?'藥妝':(type==='souvenir'?'伴手禮':'其他')))) { 
+                        btn.className = "px-3 py-1 bg-muji-accent text-white rounded-full text-xs whitespace-nowrap shadow-sm"; 
+                    } else { 
+                        btn.className = "px-3 py-1 bg-white border border-gray-200 text-gray-500 rounded-full text-xs whitespace-nowrap"; 
+                    } 
+                } 
+            }); 
+            renderShoppingList(); 
+        }
+        function toggleShoppingCheck(id) { 
+            const list = JSON.parse(localStorage.getItem('hk_shopping_v20')); 
+            const item = list.find(i => i.id === id); 
+            if (item) { 
+                item.done = !item.done; 
+                localStorage.setItem('hk_shopping_v20', JSON.stringify(list)); 
+                renderShoppingList(); 
+            } 
+        }
+        function openShoppingModal(id) { 
+            currentShoppingId = id; 
+            const modal = document.getElementById('shopping-edit-modal'); 
+            const title = document.getElementById('shopping-modal-title'); 
+            document.getElementById('shop-name').value = ''; 
+            document.getElementById('shop-type').value = 'drug'; 
+            document.getElementById('shop-desc').value = ''; 
+            document.getElementById('shop-photo').value = ''; 
+            if(id) { 
+                const list = JSON.parse(localStorage.getItem('hk_shopping_v20')); 
+                const item = list.find(i => i.id === id); 
+                if(item) { 
+                    title.innerText = "編輯必買"; 
+                    document.getElementById('shop-name').value = item.name; 
+                    document.getElementById('shop-type').value = item.type; 
+                    document.getElementById('shop-desc').value = item.desc; 
+                } 
+            } else { 
+                title.innerText = "新增必買"; 
+            }
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); modal.querySelector('div').classList.add('scale-100'); }, 10);
+        }
+        function closeShoppingModal() { 
+            const modal = document.getElementById('shopping-edit-modal'); 
+            modal.classList.add('opacity-0'); 
+            modal.querySelector('div').classList.remove('scale-100'); 
+            modal.querySelector('div').classList.add('scale-95'); 
+            setTimeout(() => { modal.classList.add('hidden'); currentShoppingId = null; }, 250); 
+        }
+        function saveShoppingItem() {
+            const name = document.getElementById('shop-name').value.trim();
+            const type = document.getElementById('shop-type').value;
+            const desc = document.getElementById('shop-desc').value.trim();
+            const fileInput = document.getElementById('shop-photo');
+
+            if (!name) { alert('請輸入商品名稱'); return; }
+
+            const processSave = (img) => {
+                const list = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]');
+                
+                if (currentShoppingId) {
+                    // 修改現有
+                    const idx = list.findIndex(i => i.id === currentShoppingId);
+                    if (idx > -1) {
+                        list[idx].name = name;
+                        list[idx].type = type;
+                        list[idx].desc = desc;
+                        if (img) list[idx].img = img;
+                    }
+                } else {
+                    // 新增
+                    const newItem = {
+                        id: 'c' + Date.now(),
+                        type: type,
+                        name: name,
+                        desc: desc,
+                        done: false,
+                        img: img || 'https://placehold.co/100x100/e5e7eb/4b5563?text=No+Img'
+                    };
+                    list.unshift(newItem);
+                }
+
+                try {
+                    localStorage.setItem('hk_shopping_v20', JSON.stringify(list));
+                    renderShoppingList();
+                    closeShoppingModal();
+                    if (currentShoppingFilter !== 'all' && currentShoppingFilter !== type) {
+                        filterShopping(type);
+                    }
+                } catch (e) {
+                    alert("儲存失敗");
+                    console.error(e);
+                }
+            };
+
+            if (fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const c = document.createElement('canvas');
+                        const ctx = c.getContext('2d');
+                        const maxW = 300;
+                        const scale = maxW / img.width;
+                        c.width = maxW;
+                        c.height = img.height * scale;
+                        ctx.drawImage(img, 0, 0, c.width, c.height);
+                        processSave(c.toDataURL('image/jpeg', 0.6));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                processSave(null);
+            }
+        }
+
         function confirmDeleteShopping(id) { deleteTarget = 'shopping'; deleteShoppingId = id; document.getElementById('confirm-modal').classList.remove('hidden'); }
         function toggleListTab(tab) { const viewCheck = document.getElementById('view-checklist'); const viewShop = document.getElementById('view-shopping'); const btnCheck = document.getElementById('btn-checklist'); const btnShop = document.getElementById('btn-shopping'); if (tab === 'checklist') { viewCheck.classList.remove('hidden'); viewShop.classList.add('hidden'); btnCheck.classList.add('bg-white', 'shadow-sm', 'text-gray-800', 'font-bold'); btnCheck.classList.remove('text-gray-500'); btnShop.classList.remove('bg-white', 'shadow-sm', 'text-gray-800', 'font-bold'); btnShop.classList.add('text-gray-500'); } else { viewShop.classList.remove('hidden'); viewCheck.classList.add('hidden'); btnShop.classList.add('bg-white', 'shadow-sm', 'text-gray-800', 'font-bold'); btnShop.classList.remove('text-gray-500'); btnCheck.classList.remove('bg-white', 'shadow-sm', 'text-gray-800', 'font-bold'); btnCheck.classList.add('text-gray-500'); } }
         function initMemo() { const txt = localStorage.getItem('hk_memo_v2') || ''; if(document.getElementById('memo-area')) { document.getElementById('memo-area').value = txt; renderMemoLinks(txt); } }
@@ -1205,11 +1571,34 @@
             modal.classList.add('hidden');
         }
 
+        // 新增：更新清單進度條
+        function updateChecklistProgress(doneItems = 0, totalItems = 0) {
+            // 若呼叫時未傳參，嘗試從 localStorage 計算
+            try {
+                const bar = document.getElementById('progress-bar');
+                const text = document.getElementById('progress-text');
+                if (!bar || !text) return;
+                if (totalItems === 0) {
+                    const list = JSON.parse(localStorage.getItem('hk_checks_v20') || '[]');
+                    let total = 0, done = 0;
+                    list.forEach(g => { if (g.items) g.items.forEach(i => { total++; if (i.done) done++; }); });
+                    totalItems = total; doneItems = done;
+                }
+                const percent = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
+                bar.style.width = percent + '%';
+                text.innerText = percent + '%';
+            } catch (e) {
+                console.warn('updateChecklistProgress error', e);
+            }
+        }
+
         // --- TIME CHAINING LOGIC ---
         // 新增：當行程結束時間改變時，自動調整後續行程
         function adjustSchedule(dayIdx, changedEvtIdx, newEndTime) {
             const dayEvents = itineraryData[dayIdx].events;
-            // 簡單實作：如果有下一個行程是交通移動，嘗試將其開始時間設為當前結束時間 + 緩衝
+           
+            // 簡單實作：如果下一個行程是交通移動，嘗試將其開始時間設為當前結束時間 + 緩衝
+            // 這裡做一個簡單的邏輯：如果下一個行程是 "交通移動(move)"，則將其開始時間設為當前結束時間
             // 這裡僅做基本時間字串處理，若要精確需轉 Date 物件
             // 為了不破壞複雜行程，這裡暫時僅作為手動觸發提示
         }
@@ -1257,76 +1646,77 @@
         // SAVE EVENT WITH TIME CHAINING (Simple Implementation)
         function saveEvent() {
             if (currentDayIdx === null) return;
-            const start = document.getElementById('edit-start').value; 
-            const end = document.getElementById('edit-end').value; 
+            const start = document.getElementById('edit-start').value;
+            const end = document.getElementById('edit-end').value;
             const title = document.getElementById('edit-title').value;
-            
+
             if (!title) { alert('請輸入標題'); return; }
-            
+
             const originalEvt = (currentEvtIdx > -1) ? itineraryData[currentDayIdx].events[currentEvtIdx] : {};
-            const newEvent = { 
-                time: (start && end) ? `${start} ~ ${end}` : (start || ''), 
-                title, 
-                type: document.getElementById('edit-type').value, 
-                note: document.getElementById('edit-note').value, 
-                station: document.getElementById('edit-station').value, 
-                tags: document.getElementById('edit-tags').value ? document.getElementById('edit-tags').value.split(',').map(s => s.trim()).filter(s => s) : [], 
-                story: originalEvt.story || "", 
-                tips: originalEvt.tips || "" 
+            
+            // 建立新事件物件
+            const newEvent = {
+                time: (start && end) ? `${start} ~ ${end}` : (start || ''),
+                title,
+                type: document.getElementById('edit-type').value,
+                note: document.getElementById('edit-note').value,
+                station: document.getElementById('edit-station').value,
+                tags: document.getElementById('edit-tags').value ? document.getElementById('edit-tags').value.split(',').map(s => s.trim()).filter(s => s) : [],
+                story: originalEvt.story || "",
+                tips: originalEvt.tips || ""
             };
-            
-            if (currentEvtIdx === -1) { 
-                itineraryData[currentDayIdx].events.push(newEvent); 
-                itineraryData[currentDayIdx].events.sort((a, b) => a.time.localeCompare(b.time)); 
-            } 
-            else { 
-                itineraryData[currentDayIdx].events[currentEvtIdx] = newEvent; 
-                
-                // SMART TIME CHAINING: 如果修改了結束時間，自動調整下一個行程的開始時間
-                // 這裡做一個簡單的邏輯：如果下一個行程是 "交通移動(move)"，則將其開始時間設為當前結束時間
-                if (end && currentEvtIdx + 1 < itineraryData[currentDayIdx].events.length) {
-                    const nextEvt = itineraryData[currentDayIdx].events[currentEvtIdx + 1];
-                    if (nextEvt.type === 'move') {
-                        const nextTimes = nextEvt.time.split(' ~ ');
-                        if (nextTimes[0].trim() !== end) {
-                            // 簡單更新：只改開始時間，保留原長度
-                            // 計算原時長
-                            // 這裡為了簡化，直接將下一個行程開始時間設為當前結束時間
-                            // 若要完整功能需引入 Moment.js 或複雜計算，這裡採保守策略
-                            // 僅當下一個行程明顯是接續的移動時才提示或修改
-                            // 為避免錯誤，這裡暫不自動修改，僅依賴 UI 提示
-                        }
-                    }
-                }
+
+            // 判斷是新增還是編輯
+            if (currentEvtIdx === -1) {
+                itineraryData[currentDayIdx].events.push(newEvent);
+                // 重新排序
+                itineraryData[currentDayIdx].events.sort((a, b) => a.time.localeCompare(b.time));
+            } else {
+                itineraryData[currentDayIdx].events[currentEvtIdx] = newEvent;
             }
-            
+
+            // 儲存本機
             localStorage.setItem('hk_itinerary_v20', JSON.stringify(itineraryData));
-            renderPlan(); closeModal();
+            // 同步雲端
+            saveToCloud('hk_itinerary_v20', itineraryData);
+
+            renderPlan();
+            closeModal();
+            showToast("行程已更新並同步", "success");
         }
+        
+        // SMART TIME CHAINING: 如果修改了結束時間，自動調整下一個行程的開始時間
+        // 這裡做一個簡單的邏輯：如果下一個行程是 "交通移動(move)"，則將其開始時間設為當前結束時間
+        // 這裡僅做基本時間字串處理，若要精確需轉 Date 物件
+        // 為了不破壞複雜行程，這裡暫時僅作為手動觸發提示
     </script>
     
     <!-- Service Worker Registration with Cache Busting -->
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // 強制檢查更新機制
-                navigator.serviceWorker.register('./sw.js?v=' + new Date().getTime())
-                    .then((reg) => {
-                        console.log('Service Worker 註冊成功:', reg);
-                        reg.onupdatefound = () => {
-                            const installingWorker = reg.installing;
-                            installingWorker.onstatechange = () => {
-                                if (installingWorker.state === 'installed') {
-                                    if (navigator.serviceWorker.controller) {
-                                        console.log('新內容已下載，即將重新整理...');
-                                        window.location.reload(); 
+            // 只在 http(s) 原始位置註冊 Service Worker，避免 file:// 拋錯
+            if (location.protocol === 'http:' || location.protocol === 'https:') {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js?v=' + new Date().getTime())
+                        .then((reg) => {
+                            console.log('Service Worker 註冊成功:', reg);
+                            reg.onupdatefound = () => {
+                                const installingWorker = reg.installing;
+                                installingWorker.onstatechange = () => {
+                                    if (installingWorker.state === 'installed') {
+                                        if (navigator.serviceWorker.controller) {
+                                            console.log('新內容已下載，即將重新整理...');
+                                            window.location.reload();
+                                        }
                                     }
-                                }
+                                };
                             };
-                        };
-                    })
-                    .catch((err) => console.log('Service Worker 註冊失敗:', err));
-            });
+                        })
+                        .catch((err) => console.log('Service Worker 註冊失敗:', err));
+                });
+            } else {
+                console.log('跳過 Service Worker 註冊（非 http/https 協定）');
+            }
         }
     </script>
 </body>

@@ -1,5 +1,5 @@
 // 修改版本號來觸發更新 (目前是 v3.0)
-const CACHE_NAME = 'hokkaido-v3.1';
+const CACHE_NAME = 'hokkaido-v3.2';
 const urlsToCache = [
   './',
   './index.html',
