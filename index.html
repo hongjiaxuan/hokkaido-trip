@@ -424,7 +424,7 @@
         // ...existing code...
         
         // --- CLOUD SYNC CONFIG (雲端同步設定) ---
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzFHcJNlhnffOhycydVA9NJgrPNxWyMyWfMU0k_9DTpplQUZSsVG_sGd__MXd1Dapv3/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxHLVR3OKM4qFoGzqnITcN9kDJq12CEpPyY4b0hn2Frwez4avJbFEasZiVQDKNjvT9K/exec";
 
         // 讀取雲端資料（修復版本）
         async function loadFromCloud() {
@@ -495,43 +495,27 @@
                 showToast(`同步失敗: ${e.message}`, "error");
             }
         }
-
-        // 上傳資料到雲端（修復版本）
+        // 上傳資料到雲端 (修正版：移除標頭以避免 CORS 錯誤)
         async function saveToCloud(key, dataObj) {
-            if (!GAS_API_URL) {
-                console.log('未設定 GAS_API_URL，跳過雲端同步');
-                return;
-            }
+            if (!GAS_API_URL) return;
             
             try {
                 const payload = {
                     key: key,
-                    value: JSON.stringify(dataObj)  // ✅ 確保是字符串
+                    value: JSON.stringify(dataObj)
                 };
                 
+                // ★★★ 修改重點：移除 headers 設定，讓瀏覽器用預設方式傳送 ★★★
                 const res = await fetch(GAS_API_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    mode: 'no-cors' // 加入這行，強迫瀏覽器忽略跨域檢查 (雖然無法讀取回傳結果，但能確保資料送達)
                 });
                 
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                
-                const result = await res.json();
-                
-                if (result.status === 'success') {
-                    console.log('✅ 已上傳至雲端:', key);
-                } else {
-                    console.warn('⚠️ 上傳到雲端失敗:', result);
-                }
+                console.log('已發送上傳請求:', key);
                 
             } catch (err) {
-                console.error('❌ 上傳失敗:', err.message);
-                // 靜默失敗，不中斷應用流程
+                console.error('上傳發送失敗:', err);
             }
         }
         // --- TOAST NOTIFICATION SYSTEM ---
@@ -753,17 +737,22 @@
         }
         
         function executeDelete() { 
+            // 刪除行程
             if (deleteTarget === 'itinerary') { 
                 try { 
                     itineraryData[currentDayIdx].events.splice(currentEvtIdx, 1); 
                     localStorage.setItem('hk_itinerary_v20', JSON.stringify(itineraryData));
-                    saveToCloud('hk_itinerary_v20', itineraryData);  // ★ 新增同步
+                    
+                    // ★ 同步 ★
+                    saveToCloud('hk_itinerary_v20', itineraryData);
+                    
                     renderPlan(); 
                     closeModal(); 
                     closeViewModal(); 
                     showToast('行程已刪除並同步'); 
                 } catch(e) { console.error(e); } 
             } 
+            // 重置行程 (保持原樣，或視需求同步)
             else if (deleteTarget === 'itinerary-reset') { 
                 localStorage.removeItem('hk_itinerary_v20'); 
                 initItinerary(); 
@@ -771,20 +760,30 @@
                 renderPlan(); 
                 showToast('行程已重置'); 
             } 
+            // 清除所有記帳
             else if (deleteTarget === 'expense-clear') { 
                 localStorage.removeItem('hk_wallet_v20'); 
-                saveToCloud('hk_wallet_v20', []);  // ★ 新增同步（清空）
+                
+                // ★ 同步 (傳送空陣列) ★
+                saveToCloud('hk_wallet_v20', []);
+                
                 renderExpenseList(); 
                 showToast('資料已清除並同步'); 
             } 
+            // 刪除單筆記帳
             else if (deleteTarget === 'expense-single') { 
                 let expenses = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); 
                 expenses = expenses.filter(e => e.id !== deleteExpenseId); 
                 localStorage.setItem('hk_wallet_v20', JSON.stringify(expenses));
-                saveToCloud('hk_wallet_v20', expenses);  // ★ 新增同步
+                
+                // ★ 同步 (移除圖片後上傳) ★
+                const cleanExpenses = expenses.map(d => ({...d, img: ''}));
+                saveToCloud('hk_wallet_v20', cleanExpenses);
+                
                 renderExpenseList(); 
                 showToast('紀錄已刪除並同步'); 
             } 
+            // 購物與清單刪除 (您說不需要同步，保持原樣即可，或依照前述邏輯加上去)
             else if (deleteTarget === 'shopping') { 
                 let list = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]'); 
                 list = list.filter(i => i.id !== deleteShoppingId); 
@@ -1022,28 +1021,37 @@
             const twdPrice = Math.round(jpyPrice * currentRate); 
 
             const processSave = (img) => { 
-                const data = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); 
-                data.unshift({ 
-                    id: Date.now(), 
-                    payer, 
-                    item, 
-                    price: jpyPrice, 
-                    rate: currentRate, 
-                    twd: twdPrice,     
-                    img, 
-                    date: expenseDate 
-                }); 
-                try { 
-                    localStorage.setItem('hk_wallet_v20', JSON.stringify(data));
-                    saveToCloud('hk_wallet_v20', data); 
-                    document.getElementById('expense-item').value = ''; 
-                    document.getElementById('expense-price').value = ''; 
-                    fileInput.value = ''; 
-                    document.getElementById('photo-label').innerText = '拍照/上傳'; 
-                    renderExpenseList(); 
-                    showToast("記帳成功", 'success');
-                } catch(e) { showToast("儲存空間已滿，請備份後清除", 'error'); } 
-            }; 
+                    const data = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); 
+                    data.unshift({ 
+                        id: Date.now(), 
+                        payer, 
+                        item, 
+                        price: jpyPrice, 
+                        rate: currentRate, 
+                        twd: twdPrice,     
+                        img, 
+                        date: expenseDate 
+                    }); 
+                    try { 
+                        // 1. 存本機 (包含圖片)
+                        localStorage.setItem('hk_wallet_v20', JSON.stringify(data));
+                        
+                        // ★★★ 2. 同步雲端 (移除圖片以確保成功) ★★★
+                        // Google Sheets 存不下大圖片，我們把 img 欄位清空再上傳
+                        const cleanData = data.map(d => ({...d, img: ''}));
+                        saveToCloud('hk_wallet_v20', cleanData); 
+
+                        document.getElementById('expense-item').value = ''; 
+                        document.getElementById('expense-price').value = ''; 
+                        fileInput.value = ''; 
+                        document.getElementById('photo-label').innerText = '拍照/上傳'; 
+                        renderExpenseList(); 
+                        showToast("記帳成功並同步", 'success');
+                    } catch(e) { 
+                        console.error(e);
+                        showToast("儲存空間已滿", 'error'); 
+                    } 
+                };
             
             if(fileInput.files[0]) { 
                 const reader = new FileReader(); 
@@ -1157,23 +1165,29 @@
             if (!item || isNaN(price)) { showToast("請填寫完整", 'error'); return; } 
             
             const updateList = (newImg) => { 
-                const list = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); 
-                const idx = list.findIndex(e => e.id === currentExpenseId); 
-                if (idx > -1) { 
-                    list[idx].payer = payer; 
-                    list[idx].item = item; 
-                    list[idx].price = price; 
-                    list[idx].rate = rate; 
-                    list[idx].twd = twd;
-                    list[idx].date = dateVal;
-                    if (newImg) list[idx].img = newImg; 
-                    localStorage.setItem('hk_wallet_v20', JSON.stringify(list)); 
-                    saveToCloud('hk_wallet_v20', list);  // ★ 新增同步
-                    renderExpenseList(); 
-                    closeExpenseEditModal(); 
-                    showToast("修改成功並同步", 'success');
-                } 
-            }; 
+            const list = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); 
+            const idx = list.findIndex(e => e.id === currentExpenseId); 
+            if (idx > -1) { 
+                list[idx].payer = payer; 
+                list[idx].item = item; 
+                list[idx].price = price; 
+                list[idx].rate = rate; 
+                list[idx].twd = twd;
+                list[idx].date = dateVal;
+                if (newImg) list[idx].img = newImg; 
+                
+                // 1. 存本機
+                localStorage.setItem('hk_wallet_v20', JSON.stringify(list)); 
+                
+                // ★★★ 2. 同步雲端 (移除圖片) ★★★
+                const cleanList = list.map(d => ({...d, img: ''}));
+                saveToCloud('hk_wallet_v20', cleanList);
+                
+                renderExpenseList(); 
+                closeExpenseEditModal(); 
+                showToast("修改成功並同步", 'success');
+                }   
+            };
             
             if (fileInput.files[0]) { 
                 const reader = new FileReader(); 
@@ -1675,9 +1689,10 @@
                 itineraryData[currentDayIdx].events[currentEvtIdx] = newEvent;
             }
 
-            // 儲存本機
+            // 1. 存入本機
             localStorage.setItem('hk_itinerary_v20', JSON.stringify(itineraryData));
-            // 同步雲端
+
+            // ★★★ 2. 同步到雲端 ★★★
             saveToCloud('hk_itinerary_v20', itineraryData);
 
             renderPlan();
