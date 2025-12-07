@@ -18,6 +18,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <!-- Tailwind Config -->
     <script>
@@ -105,6 +106,13 @@
         /* 深色模式下的 Event Active 狀態微調 */
         .dark .event-active { background-color: #a84a32 !important; border-left-color: #fb923c !important; }
         .dark .event-active h4, .dark .event-active span { color: #fff !important; }
+        /* --- 拖曳排序樣式 --- */
+        .drag-handle { cursor: grab; touch-action: none; }
+        .drag-handle:active { cursor: grabbing; }
+        /* 防止拖曳時選取到文字 */
+        .sortable-item { user-select: none; }
+        /* 拖曳中的半透明效果 */
+        .sortable-ghost { opacity: 0.4; background: #f3f4f6; }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 h-screen flex justify-center overflow-hidden font-sans">
@@ -485,7 +493,42 @@
         
         <!-- EDIT MODAL -->
         <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden opacity-0 transition-opacity flex items-center justify-center p-4"><div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-200"><div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 rounded-t-xl"><h3 class="font-bold text-gray-700 dark:text-gray-100" id="modal-title">編輯行程</h3><button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-300"><i class="fas fa-times"></i></button></div><div class="p-5 space-y-4">
-            <div class="grid grid-cols-2 gap-3"><div><label class="block text-xs font-bold text-gray-500 mb-1">開始時間</label><input type="time" id="edit-start" class="w-full p-2 border border-gray-200 rounded text-sm bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 focus:border-muji-accent focus:outline-none"></div><div><label class="block text-xs font-bold text-gray-500 mb-1">結束時間</label><input type="time" id="edit-end" class="w-full p-2 border border-gray-200 rounded text-sm bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 focus:border-muji-accent focus:outline-none"></div></div>
+            <div class="bg-gray-50 dark:bg-stone-900/50 p-3 rounded-lg border border-gray-100 dark:border-stone-700 mb-2">
+                
+                <div class="flex items-end gap-3 mb-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">開始時間</label>
+                        <input type="time" id="edit-start" oninput="syncTime('start')" class="w-full p-2 border border-gray-200 rounded text-base bg-white dark:bg-stone-800 dark:border-stone-600 dark:text-white focus:border-muji-accent focus:outline-none shadow-sm">
+                    </div>
+                    
+                    <div class="pb-3 text-gray-300 dark:text-gray-600">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">結束時間</label>
+                        <input type="time" id="edit-end" oninput="syncTime('end')" class="w-full p-2 border border-gray-200 rounded text-base bg-white dark:bg-stone-800 dark:border-stone-600 dark:text-white focus:border-muji-accent focus:outline-none shadow-sm">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-stone-700">
+                    <label class="text-xs font-bold text-gray-400 shrink-0 mr-1">預計停留</label>
+                    
+                    <div class="flex-1 flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <input type="number" id="edit-duration-h" oninput="syncTime('duration')" placeholder="0" min="0" class="w-full p-1.5 pl-2 pr-6 border border-gray-200 rounded text-sm text-center font-mono font-bold text-muji-accent dark:text-muji-accent bg-white dark:bg-stone-800 dark:border-stone-600 focus:border-muji-accent focus:outline-none">
+                            <span class="absolute right-2 top-1.5 text-[10px] text-gray-400 leading-5 pointer-events-none">H</span>
+                        </div>
+                        
+                        <span class="text-gray-300 font-bold">:</span>
+                        
+                        <div class="relative flex-1">
+                            <input type="number" id="edit-duration-m" oninput="syncTime('duration')" placeholder="0" min="0" max="59" class="w-full p-1.5 pl-2 pr-6 border border-gray-200 rounded text-sm text-center font-mono font-bold text-muji-accent dark:text-muji-accent bg-white dark:bg-stone-800 dark:border-stone-600 focus:border-muji-accent focus:outline-none">
+                            <span class="absolute right-2 top-1.5 text-[10px] text-gray-400 leading-5 pointer-events-none">M</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div><label class="block text-xs font-bold text-gray-500 mb-1">類型</label><select id="edit-type" class="w-full p-2 border border-gray-200 rounded text-sm"><option value="move">交通移動 (車程)</option><option value="spot">景點</option><option value="food">美食</option><option value="shop">購物</option><option value="transport">交通 (車站/機場)</option><option value="stay">住宿</option></select></div>
             <div><label class="block text-xs font-bold text-gray-500 mb-1">標題 <span class="text-red-500">*</span></label><input type="text" id="edit-title" class="w-full p-2 border border-gray-200 rounded text-sm" placeholder="必填"></div>
             <div><label class="block text-xs font-bold text-gray-500 mb-1">備註 (或交通方式)</label><textarea id="edit-note" rows="2" class="w-full p-2 border border-gray-200 rounded text-sm"></textarea></div>
@@ -1214,10 +1257,14 @@
 
         function renderDateSelector() { const container = document.getElementById('date-scroll-container'); let html = ''; itineraryData.forEach((day, idx) => { const isActive = idx === currentSelectedDayIndex; const activeClass = isActive ? 'bg-muji-accent text-white shadow-md' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600'; const dateShort = day.date.split('/')[1]; html += `<button onclick="switchDay(${idx})" class="flex-shrink-0 w-14 h-12 rounded-xl flex flex-col items-center justify-center transition-all ${activeClass} border border-transparent ${!isActive ? 'border-gray-100 dark:border-gray-700' : ''}"><span class="text-xs font-bold leading-none mb-1">Day ${day.day}</span><span class="text-[10px] font-mono leading-none">${dateShort}</span></button>`; }); container.innerHTML = html; }
 
+        let sortableInstance = null; // 全域變數，用來管理拖曳實例
+
         function renderPlan() { 
             const container = document.getElementById('itinerary-list'); 
             const weatherCard = document.getElementById('plan-weather-card'); 
             const day = itineraryData[currentSelectedDayIndex]; 
+            
+            // 1. 渲染天氣卡 (保持不變)
             weatherCard.innerHTML = `<div class="bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between" style="max-width:360px;margin:6px auto">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-400 dark:text-blue-300 text-lg"><i class="fas ${day.weather.icon}"></i></div>
@@ -1230,47 +1277,32 @@
             </div>`; 
             
             let eventsHtml = ''; 
+            
+            // 2. 渲染行程列表
             day.events.forEach((evt, evtIdx) => { 
-            // --- ★★★ 顏色邏輯修正開始 ★★★ ---
-                // 預設 (白色底 / 深灰底)
+                // --- 顏色邏輯 ---
                 let bgClass = 'bg-white border-l-4 border-gray-200 dark:bg-gray-800 dark:border-gray-600'; 
                 let iconClass = 'text-gray-400 fa-map-marker-alt';
-                let titleClass = 'text-muji-text dark:text-gray-100'; // 標題在深色模式變亮白
+                let titleClass = 'text-muji-text dark:text-gray-100';
                 let isMove = false;
 
-                // 針對不同類型，設定 "淺色模式背景" 與 "深色模式背景 (dark:...)"
                 if (evt.type === 'transport') { 
-                    // 交通：淺藍底 -> 深藍底
                     bgClass = 'bg-muji-transport border-l-4 border-blue-400 dark:bg-blue-900/30 dark:border-blue-500'; 
                     iconClass = 'text-blue-500 dark:text-blue-400 dark:text-blue-300 fa-plane'; 
-                } 
-                else if (evt.type === 'food') { 
-                    // 美食：淺橘底 -> 深橘底
+                } else if (evt.type === 'food') { 
                     bgClass = 'bg-muji-food border-l-4 border-orange-400 dark:bg-orange-900/30 dark:border-orange-500'; 
                     iconClass = 'text-orange-500 dark:text-orange-400 fa-utensils'; 
-                } 
-                else if (evt.type === 'shop') { 
-                    // 購物：淺粉底 -> 深粉底
+                } else if (evt.type === 'shop') { 
                     bgClass = 'bg-muji-shop border-l-4 border-pink-400 dark:bg-pink-900/30 dark:border-pink-500'; 
                     iconClass = 'text-pink-500 dark:text-pink-400 fa-shopping-bag'; 
-                } 
-                else if (evt.type === 'spot') { 
-                    // 景點：淺綠底 -> 深綠底
+                } else if (evt.type === 'spot') { 
                     bgClass = 'bg-muji-spot border-l-4 border-green-500 dark:bg-green-900/30 dark:border-green-500'; 
                     iconClass = 'text-green-600 dark:text-green-400 fa-camera'; 
-                } 
-                else if (evt.type === 'stay') { 
-                    // 住宿：維持灰/白底
+                } else if (evt.type === 'stay') { 
                     iconClass = 'text-indigo-400 dark:text-indigo-300 fa-bed'; 
-                }
-                else if (evt.type === 'move') { 
-                    // 修改：背景改為 dark:bg-stone-800 (不透明)，邊框改亮 dark:border-stone-600
+                } else if (evt.type === 'move') { 
                     bgClass = 'bg-gray-50 border-l-2 border-gray-300 py-2 pl-2 dark:bg-stone-800 dark:border-stone-600'; 
-                    
-                    // 修改：Icon 顏色改亮一點
                     iconClass = 'text-gray-400 dark:text-stone-400 fa-bus'; 
-                    
-                    // 修改：標題顏色
                     titleClass = 'text-sm text-gray-600 dark:text-stone-200';
                     isMove = true;
                 }
@@ -1288,36 +1320,79 @@
                 } 
                 
                 const eventId = `event-${currentSelectedDayIndex}-${evtIdx}`; 
-                const timelineType = isMove ? 'type-move' : '';
-                
+                // 加入 data-idx 方便追蹤
+                const dataAttr = `data-idx="${evtIdx}"`;
+
+                // ★★★ 新增：拖曳手柄 HTML (右側兩條線) ★★★
+                const dragHandle = `<div class="drag-handle absolute right-0 top-0 bottom-0 w-10 flex items-center justify-center cursor-grab opacity-20 hover:opacity-100 touch-manipulation z-20 transition-opacity"><i class="fas fa-grip-lines text-gray-500 dark:text-gray-400"></i></div>`;
+
                 if (isMove) {
-                    eventsHtml += `<div class="relative pl-8 timeline-line ${timelineType} group" id="${eventId}" data-time="${evt.time}" data-date="${day.dateObj}">
+                    // 加入 sortable-item class
+                    eventsHtml += `<div class="relative pl-8 timeline-line type-move group sortable-item" ${dataAttr} id="${eventId}" data-time="${evt.time}" data-date="${day.dateObj}">
                         <div class="absolute left-2 top-3 w-4 text-center z-10"><div class="w-4 h-4 rounded-full bg-gray-200 border border-white flex items-center justify-center indicator-icon"><i class="fas ${iconClass} text-[8px] text-white"></i></div></div>
-                        <div class="${bgClass} rounded-r-lg relative cursor-pointer hover:bg-gray-100 dark:bg-gray-900 transition-all duration-300 event-card" onclick="openViewModal(${currentSelectedDayIndex}, ${evtIdx})">
-                            <div class="flex items-center justify-between">
+                        <div class="${bgClass} rounded-r-lg relative transition-all duration-300 event-card pr-10">
+                            <div class="flex items-center justify-between cursor-pointer" onclick="openViewModal(${currentSelectedDayIndex}, ${evtIdx})">
                                 <div class="flex items-center gap-2">
                                     <span class="font-mono text-xs font-bold text-gray-400 time-display whitespace-nowrap">${evt.time}</span>
                                     <h4 class="text-xs font-bold ${titleClass} truncate">${evt.title}</h4>
                                 </div>
                                 ${evt.note ? `<div class="text-[10px] text-gray-400 truncate max-w-[120px] transport-detail">${evt.note}</div>` : ''}
                             </div>
+                            ${dragHandle}
                         </div>
                     </div>`;
                 } else {
-                    eventsHtml += `<div class="relative pl-8 timeline-line group" id="${eventId}" data-time="${evt.time}" data-date="${day.dateObj}">
+                    // 加入 sortable-item class
+                    eventsHtml += `<div class="relative pl-8 timeline-line group sortable-item" ${dataAttr} id="${eventId}" data-time="${evt.time}" data-date="${day.dateObj}">
                         <div class="absolute left-0 top-4 w-8 text-center z-10"><div class="w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-center indicator-icon"><i class="fas ${iconClass} text-xs"></i></div></div>
-                        <div class="${bgClass} p-3 rounded-lg shadow-card relative cursor-pointer hover:shadow-md transition-all duration-300 event-card" onclick="openViewModal(${currentSelectedDayIndex}, ${evtIdx})">
-                            <div class="flex justify-between items-start mb-1"><span class="font-mono text-sm font-bold text-gray-500 time-display">${evt.time}</span><div class="flex gap-2"></div></div>
-                            <h4 class="text-base font-bold ${titleClass} mb-1 leading-tight">${evt.title}</h4>
-                            ${evt.station ? `<div class="text-xs text-muji-subtext mb-1"><i class="fas fa-subway mr-1 text-gray-300"></i>${evt.station}</div>` : ''}
-                            ${evt.note ? `<p class="text-xs text-gray-500 mb-2 leading-relaxed">${evt.note}</p>` : ''}
-                            <div class="flex flex-wrap">${tagsHtml}</div>
+                        <div class="${bgClass} p-3 rounded-lg shadow-card relative transition-all duration-300 event-card pr-10">
+                            <div class="cursor-pointer" onclick="openViewModal(${currentSelectedDayIndex}, ${evtIdx})">
+                                <div class="flex justify-between items-start mb-1"><span class="font-mono text-sm font-bold text-gray-500 time-display">${evt.time}</span></div>
+                                <h4 class="text-base font-bold ${titleClass} mb-1 leading-tight">${evt.title}</h4>
+                                ${evt.station ? `<div class="text-xs text-muji-subtext mb-1"><i class="fas fa-subway mr-1 text-gray-300"></i>${evt.station}</div>` : ''}
+                                ${evt.note ? `<p class="text-xs text-gray-500 mb-2 leading-relaxed">${evt.note}</p>` : ''}
+                                <div class="flex flex-wrap">${tagsHtml}</div>
+                            </div>
+                            ${dragHandle}
                         </div>
                     </div>`;
                 }
             }); 
             container.innerHTML = eventsHtml; 
             updateRealtimeHighlight(); 
+
+            // ★★★ 3. 初始化 SortableJS (拖曳邏輯) ★★★
+            if (sortableInstance) sortableInstance.destroy(); // 切換日期時銷毀舊實例
+            
+            sortableInstance = Sortable.create(container, {
+                handle: '.drag-handle', // 只能拉手柄
+                animation: 200,         // 動畫速度 ms
+                ghostClass: 'sortable-ghost', // 拖曳時的殘影樣式
+                delay: 100,             // 防誤觸延遲 (手機友善)
+                delayOnTouchOnly: true,
+                onEnd: function (evt) {
+                    const oldIndex = evt.oldIndex;
+                    const newIndex = evt.newIndex;
+                    
+                    if (oldIndex === newIndex) return;
+
+                    // (1) 調整資料陣列順序
+                    const events = itineraryData[currentSelectedDayIndex].events;
+                    const [movedItem] = events.splice(oldIndex, 1);
+                    events.splice(newIndex, 0, movedItem);
+
+                    // (2) 執行「緊湊排列」：重新計算所有時間，填補空缺
+                    resequenceEvents(currentSelectedDayIndex);
+
+                    // (3) 存檔與同步
+                    localStorage.setItem('hk_itinerary_v20', JSON.stringify(itineraryData));
+                    saveToCloud('hk_itinerary_v20', itineraryData);
+                    
+                    // (4) 重新渲染 (讓畫面上顯示更新後的時間)
+                    renderPlan();
+                    showToast('順序已更新，時間已自動連動', 'success');
+                }
+            });
         }
 
         function updateRealtimeHighlight() { const now = new Date(); const cards = document.querySelectorAll('.timeline-line'); cards.forEach(card => { const dateStr = card.getAttribute('data-date'); const timeStr = card.getAttribute('data-time'); const eventDate = new Date(dateStr); const isSameDate = now.getFullYear() === eventDate.getFullYear() && now.getMonth() === eventDate.getMonth() && now.getDate() === eventDate.getDate(); if (!isSameDate) { removeHighlight(card); return; } const times = timeStr.split('~').map(t => t.trim()); if (times.length < 1) return; const startParts = times[0].split(':'); const startHour = parseInt(startParts[0]); const startMin = parseInt(startParts[1]); let endHour, endMin; if (times.length > 1 && times[1]) { const endParts = times[1].split(':'); endHour = parseInt(endParts[0]); endMin = parseInt(endParts[1]); } else { endHour = startHour + 1; endMin = startMin; } const startTime = new Date(now); startTime.setHours(startHour, startMin, 0); const endTime = new Date(now); endTime.setHours(endHour, endMin, 0); if (now >= startTime && now <= endTime) { addHighlight(card); } else { removeHighlight(card); } }); }
@@ -2188,11 +2263,39 @@
             const content = modal.querySelector('div');
             const btnDelete = document.getElementById('btn-delete');
             const title = document.getElementById('modal-title');
+            
+            // 取得欄位元件
+            const startInput = document.getElementById('edit-start');
+            const endInput = document.getElementById('edit-end');
+            const durHInput = document.getElementById('edit-duration-h');
+            const durMInput = document.getElementById('edit-duration-m');
+
             if (evtIdx === -1) { 
+                // --- 新增模式 ---
                 title.innerText = "新增行程"; 
                 btnDelete.classList.add('hidden'); 
-                document.getElementById('edit-start').value = ""; 
-                document.getElementById('edit-end').value = ""; 
+                
+                // 預設時間：接續上一個行程
+                const dayEvents = itineraryData[dayIdx].events;
+                let defaultStart = "09:00";
+                if (dayEvents.length > 0) {
+                    const lastEvt = dayEvents[dayEvents.length - 1];
+                    if (lastEvt.time && lastEvt.time.includes('~')) {
+                        defaultStart = lastEvt.time.split('~')[1].trim();
+                    }
+                }
+
+                startInput.value = defaultStart; 
+                
+                // 預設停留 1 小時 0 分
+                durHInput.value = 1;
+                durMInput.value = 0;
+
+                // 自動計算結束時間
+                const endMin = timeToMin(defaultStart) + 60;
+                endInput.value = minToTime(endMin);
+
+                // 清空其他欄位
                 document.getElementById('edit-title').value = ""; 
                 document.getElementById('edit-type').value = "spot"; 
                 document.getElementById('edit-note').value = ""; 
@@ -2200,21 +2303,92 @@
                 document.getElementById('edit-tags').value = ""; 
             } 
             else { 
+                // --- 編輯模式 ---
                 const evt = itineraryData[dayIdx].events[evtIdx]; 
                 title.innerText = "編輯行程"; 
                 btnDelete.classList.remove('hidden'); 
-                const times = evt.time ? evt.time.split(' ~ ') : ['','']; 
-                document.getElementById('edit-start').value = times[0].trim() || ''; 
-                document.getElementById('edit-end').value = times[1] ? times[1].trim() : ''; 
+                
+                const times = evt.time ? evt.time.split('~') : ['','']; 
+                const sStr = times[0].trim();
+                const eStr = times[1] ? times[1].trim() : '';
+
+                startInput.value = sStr; 
+                endInput.value = eStr; 
+
+                // ★ 自動計算目前的停留時間 (拆解為 時:分)
+                if (sStr && eStr) {
+                    let diff = timeToMin(eStr) - timeToMin(sStr);
+                    if (diff < 0) diff += 1440; // 處理跨日
+                    
+                    const h = Math.floor(diff / 60);
+                    const m = diff % 60;
+                    
+                    durHInput.value = h;
+                    durMInput.value = m;
+                } else {
+                    durHInput.value = 1;
+                    durMInput.value = 0;
+                }
+
                 document.getElementById('edit-title').value = evt.title; 
                 document.getElementById('edit-type').value = evt.type || 'spot'; 
                 document.getElementById('edit-note').value = evt.note || ''; 
                 document.getElementById('edit-station').value = evt.station || ''; 
                 document.getElementById('edit-tags').value = evt.tags ? evt.tags.join(', ') : ''; 
             }
+            
             modal.classList.remove('hidden');
             setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
             document.body.classList.add('modal-active');
+        }
+        // --- 時間欄位連動邏輯 (時:分 版) ---
+        function syncTime(source) {
+            const startInput = document.getElementById('edit-start');
+            const endInput = document.getElementById('edit-end');
+            const durHInput = document.getElementById('edit-duration-h');
+            const durMInput = document.getElementById('edit-duration-m');
+
+            // 取得目前數值
+            const startVal = startInput.value;
+            const endVal = endInput.value;
+            
+            // 取得停留時間 (時/分)，若為空則視為 0
+            let h = parseInt(durHInput.value) || 0;
+            let m = parseInt(durMInput.value) || 0;
+            let totalDurationMin = (h * 60) + m;
+
+            if (!startVal) return; 
+
+            const startMin = timeToMin(startVal);
+            
+            // 邏輯 A: 修改「開始」或「停留時間(時/分)」 -> 自動算「結束」
+            if (source === 'start' || source === 'duration') {
+                if (totalDurationMin === 0 && source === 'start') {
+                    // 如果只是改開始時間且持續時間為0，預設給 60 分鐘方便操作
+                    totalDurationMin = 60;
+                    durHInput.value = 1;
+                    durMInput.value = 0;
+                }
+                const newEndMin = startMin + totalDurationMin;
+                endInput.value = minToTime(newEndMin);
+            }
+            
+            // 邏輯 B: 修改「結束」 -> 自動反推「停留時間 (時:分)」
+            else if (source === 'end') {
+                if (!endVal) return;
+                const endMin = timeToMin(endVal);
+                
+                // 處理跨日
+                let diff = endMin - startMin;
+                if (diff < 0) diff += 24 * 60; 
+                
+                // 換算回 時:分
+                const newH = Math.floor(diff / 60);
+                const newM = diff % 60;
+
+                durHInput.value = newH;
+                durMInput.value = newM;
+            }
         }
         function closeModal() {
             const modal = document.getElementById('edit-modal'); const content = modal.querySelector('div');
@@ -2254,6 +2428,46 @@
                     next.time = `${minToTime(newNextStart)} ~ ${minToTime(newNextEnd)}`;
                 }
             }
+        }
+        // --- 核心邏輯 C：緊湊排列 (拖曳排序專用) ---
+        // 重新計算所有行程，讓它們像火車車廂一樣緊密相連，填補空隙
+        function resequenceEvents(dayIdx) {
+            const events = itineraryData[dayIdx].events;
+            if (events.length === 0) return;
+
+            // 1. 找出當天「最早」的開始時間作為起點 (錨點)
+            let minStart = 24 * 60; 
+            let hasValidTime = false;
+
+            events.forEach(evt => {
+                if (evt.time && evt.time.includes('~')) {
+                    const start = timeToMin(evt.time.split('~')[0]);
+                    if (start < minStart) {
+                        minStart = start;
+                        hasValidTime = true;
+                    }
+                }
+            });
+
+            // 如果都沒填時間，預設從 09:00 (540分) 開始
+            if (!hasValidTime) minStart = 540; 
+
+            // 2. 依照當前的新順序，重新串接時間
+            let currentStart = minStart;
+
+            events.forEach(evt => {
+                // 取得該行程原本的持續時間 (Duration)
+                const duration = getDuration(evt);
+                
+                // 計算新的結束時間
+                const newEnd = currentStart + duration;
+
+                // 更新時間字串
+                evt.time = `${minToTime(currentStart)} ~ ${minToTime(newEnd)}`;
+
+                // 下一個行程的開始 = 這個行程的結束
+                currentStart = newEnd;
+            });
         }
         // --- 刪除後的自動遞補 (吸附邏輯) ---
         function shiftEventsBack(dayIdx, startIndex, durationMinutes) {
