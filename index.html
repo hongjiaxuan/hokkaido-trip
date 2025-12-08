@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>北海道冬旅 2025</title>
     
-    <!-- PWA 設定 -->
+    <!-- PWA 漸進式網路應用程式設定 -->
     <meta name="theme-color" content="#7d6c5e">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.jpg">
     
-    <!-- Google Fonts -->
+    <!-- Google Fonts中文字體 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -27,82 +27,79 @@
             theme: {
                 extend: {
                     colors: {
-                        // ★★★ 修改處：將系統預設的 gray 覆蓋為暖灰色 (Stone) ★★★
-                        // 這會讓深色模式變成更有質感的「深咖啡灰」，與您的棕色主題完美融合
+                        // 將系統預設的 gray 覆蓋為暖灰色 (Stone) 
                         gray: {
                             50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 300: '#d6d3d1',
                             400: '#a8a29e', 500: '#78716c', 600: '#57534e', 700: '#44403c',
                             800: '#292524', 900: '#1c1917', 950: '#0c0a09'
                         },
                         muji: {
-                            // bg 與 card 我們改用上面定義好的暖灰，這裡維持原設定或微調
                             bg: '#f9f9f9', card: '#ffffff', text: '#4a4a4a', subtext: '#8a8a8a',
                             accent: '#7d6c5e', highlight: '#a84a32', border: '#e5e5e5',
-                            transport: '#eff6ff', transportText: '#3b82f6',
-                            spot: '#f0fdf4', spotText: '#15803d',
-                            food: '#fff7ed', foodText: '#c2410c',
-                            shop: '#fdf2f8', shopText: '#be185d',
-                            active: '#2d3748',
-                            move: '#f3f4f6'
+                            transport: '#eff6ff', transportText: '#3b82f6',// 自訂交通顏色
+                            spot: '#f0fdf4', spotText: '#15803d',// 自訂景點顏色
+                            food: '#fff7ed', foodText: '#c2410c',// 自訂美食顏色
+                            shop: '#fdf2f8', shopText: '#be185d',// 自訂購物顏色
+                            active: '#2d3748',// 自訂行程選取顏色
+                            move: '#f3f4f6'// 自訂移動中顏色
                         }
                     },
-                    fontFamily: { sans: ['"Noto Sans TC"', 'sans-serif'], serif: ['"Noto Serif TC"', 'serif'] },
-                    boxShadow: { 'soft': '0 4px 20px rgba(0, 0, 0, 0.05)', 'card': '0 1px 3px rgba(0,0,0,0.1)' }
+                    fontFamily: { sans: ['"Noto Sans TC"', 'sans-serif'], serif: ['"Noto Serif TC"', 'serif'] },// 自訂字體
+                    boxShadow: { 'soft': '0 4px 20px rgba(0, 0, 0, 0.05)', 'card': '0 1px 3px rgba(0,0,0,0.1)' }// 自訂陰影
                 }
             }
         }
     </script>
 
     <style>
-        body { -webkit-tap-highlight-color: transparent; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        body { -webkit-tap-highlight-color: transparent; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+        /* 隱藏滾動條 */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
+        /* Tab 內容切換 */
         .tab-content { display: none !important; }
         .tab-content.active { display: block !important; animation: fadeIn 0.25s ease-out; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
+        /* 行程時間軸樣式 */
         .timeline-line::before { content: ''; position: absolute; top: 16px; bottom: -16px; left: 18px; width: 2px; background: #e5e5e5; z-index: 0; }
         .timeline-line:last-child::before { display: none; }
         .timeline-line.type-move::before { border-left: 2px dashed #cbd5e1; background: transparent; width: 0; }
-
+        /* 標籤樣式 */
         .tag-must-eat { background-color: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
         .tag-must-buy { background-color: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
         .tag-reserve { background-color: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
         .tag-transport { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
-        
+        /* Event Active 事件狀態定義 */
         .event-active { background-color: #2d3748 !important; color: white !important; border-left-color: #a84a32 !important; box-shadow: 0 0 15px rgba(45, 55, 72, 0.3); }
         .event-active h4, .event-active .transport-detail { color: white !important; }
         .event-active span, .event-active p, .event-active i { color: #cbd5e0 !important; }
-        
+        /* Pulse Animation 脈衝動畫*/
         .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         .modal { transition: opacity 0.25s ease; }
         body.modal-active { overflow: hidden; }
-
+        /* Floating Action Button 浮動按鈕*/
         .fab-btn { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .fab-btn:active { transform: scale(0.9); }
+        /* Checklist Item 清單項目*/
         .checklist-item { cursor: pointer; user-select: none; }
         .checklist-item:active { background-color: #f3f4f6; }
-
-        /* Toast Notification */
+        /* Toast Notification 彈出通知*/
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; pointer-events: none; }
         .toast { background: rgba(45, 55, 72, 0.95); color: white; padding: 12px 20px; border-radius: 50px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-20px); transition: all 0.3s ease; text-align: center; backdrop-filter: blur(4px); pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .toast.show { opacity: 1; transform: translateY(0); }
         .toast.error { background: rgba(220, 38, 38, 0.95); }
         .toast.success { background: rgba(22, 163, 74, 0.95); }
-
-        /* Error Input Animation */
+        /* Error Input Animation錯誤輸入動畫*/
         .input-error { border-color: #ef4444 !important; animation: shake 0.3s ease-in-out; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-
-        /* Progress Bar */
+        /* Progress Bar 進度條*/
         #progress-bar { transition: width 0.3s ease; }
         /* --- 深色模式標籤優化 --- */
         .dark .tag-must-eat { background-color: rgba(194, 65, 12, 0.2); color: #fdba74; border-color: #9a3412; }
         .dark .tag-must-buy { background-color: rgba(190, 24, 93, 0.2); color: #f9a8d4; border-color: #831843; }
         .dark .tag-reserve { background-color: rgba(133, 77, 14, 0.2); color: #fde047; border-color: #713f12; }
         .dark .tag-transport { background-color: rgba(29, 78, 216, 0.2); color: #93c5fd; border-color: #1e3a8a; }
-
         /* 深色模式下的 Event Active 狀態微調 */
         .dark .event-active { background-color: #a84a32 !important; border-left-color: #fb923c !important; }
         .dark .event-active h4, .dark .event-active span { color: #fff !important; }
@@ -162,7 +159,6 @@
                 <div class="flex flex-col h-full p-4 pb-20 overflow-y-auto hide-scrollbar">
                     
                     <h2 class="text-xl font-serif text-muji-accent mb-4 pl-2 border-l-4 border-muji-accent">札幌深度導覽</h2>
-                    
                     <h3 class="font-bold text-gray-700 dark:text-gray-100 mb-3 mt-2 flex items-center"><i class="fas fa-shopping-basket text-blue-500 mr-2"></i>在地超市文化體驗</h3>
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-blue-100 dark:border-blue-900/50 mb-6">
                         <p class="text-xs text-gray-500 mb-4 leading-relaxed">體驗日本在地生活最好的方式就是逛超市！以下推薦距離您住宿（中島公園）與狸小路行程順路的超市。</p>
@@ -183,7 +179,6 @@
                             </div>
                         </div>
                     </div>
-
                     <h3 class="font-bold text-gray-700 dark:text-gray-100 mb-3 mt-4 flex items-center"><i class="fas fa-map-signs text-indigo-500 mr-2"></i>札幌私房備案</h3>
                     <div class="space-y-4 mb-8">
                         <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-indigo-100 dark:border-indigo-900/50 relative overflow-hidden">
@@ -234,13 +229,13 @@
                             <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-bl-full -mr-8 -mt-8"></div>
                             <div class="flex justify-between items-start mb-2 relative z-10"><h4 class="font-bold text-gray-800 dark:text-gray-100">かま栄 工場直營店 (Kamaei)</h4><span class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 px-2 py-1 rounded">麵包捲</span></div>
                             <p class="text-xs text-gray-600 dark:text-gray-300 mb-2 relative z-10">這是小樽當地人也愛的魚板老店！雖然稍微偏離堺町通尾端㇐點點（靠近運河末端），但非常值得走過去。</p>
-                            <a href="https://maps.app.goo.gl/7Yga5HtPn211SZDk9" target="_blank" class="text-xs text-indigo-500 dark:text-indigo-400 font-bold flex items-center relative z-10"><i class="fas fa-location-arrow mr-1"></i>導航去這裡</a>
+                            <a href="https://maps.app.goo.gl/3J1EwY88hqdqmryR9" target="_blank" class="text-xs text-indigo-500 dark:text-indigo-400 font-bold flex items-center relative z-10"><i class="fas fa-location-arrow mr-1"></i>導航去這裡</a>
                         </div>
                         <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-pink-100 relative overflow-hidden">
                             <div class="absolute top-0 right-0 w-16 h-16 bg-pink-50 rounded-bl-full -mr-8 -mt-8"></div>
                             <div class="flex justify-between items-start mb-2 relative z-10"><h4 class="font-bold text-gray-800 dark:text-gray-100">昆布專門店 利尻屋 Minoya</h4><span class="text-[10px] bg-pink-100 text-pink-600 px-2 py-1 rounded">湯霜昆布</span></div>
                             <p class="text-xs text-gray-600 dark:text-gray-300 mb-2 relative z-10">門口招牌寫著「爸爸如果不買，就是媽媽的不對（お父さん預かります）」，非常幽默的店家。</p>
-                            <a href="https://maps.app.goo.gl/XW1s3Ygy77Yh1D2u6" target="_blank" class="text-xs text-indigo-500 dark:text-indigo-400 font-bold flex items-center relative z-10"><i class="fas fa-location-arrow mr-1"></i>導航去這裡</a>
+                            <a href="https://maps.app.goo.gl/jBdJE7QKRcwz926G6" target="_blank" class="text-xs text-indigo-500 dark:text-indigo-400 font-bold flex items-center relative z-10"><i class="fas fa-location-arrow mr-1"></i>導航去這裡</a>
                         </div>
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border-l-4 border-green-500 mb-6">
                         <div class="flex justify-between items-center mb-3">
@@ -961,6 +956,8 @@
             } catch (e) { console.warn('switchDay scroll error', e); }
         }
 
+        const defaultShoppingList = [{ id: 'm1', type: 'drug', name: '大正製藥 口內炎貼片', desc: '貼的含類固醇，吸附力好', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=口內炎' },{ id: 'm2', type: 'drug', name: 'Traful 軟膏 PRO QUICK', desc: '抗炎成分，塗抹型', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=Traful' }, { id: 'm3', type: 'drug', name: 'Chocola BB 口內炎噴霧', desc: '殺菌修復，薄荷味', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=BB' }, { id: 'm4', type: 'drug', name: '小林製藥 液體絆創膏', desc: '防水隱形OK繃', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=液體絆' }, { id: 'm5', type: 'drug', name: 'EVE Quick DX', desc: '速效止痛', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=EVE' }, { id: 'm6', type: 'drug', name: 'Loxonin S Premium', desc: '強效止痛', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=Loxonin' }, { id: 'm7', type: 'drug', name: 'PAIR 痘痘藥膏', desc: '消炎殺菌', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=PAIR' }, { id: 'm8', type: 'drug', name: 'Aneron 暈車藥', desc: '長效持續', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=Aneron' }, { id: 'm9', type: 'drug', name: '哆啦A夢 暈車藥', desc: '兒童可用，汽水味', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=哆啦A夢' }, { id: 'm10', type: 'drug', name: 'DHC 速攻藍莓 V-MAX', desc: '護眼，花青素增量', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=DHC藍莓' }, { id: 'm11', type: 'drug', name: '龍角散 Direct', desc: '免水服用，水蜜桃/薄荷', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=龍角散' }, { id: 'm12', type: 'drug', name: 'DHC 乳酸菌/益生菌', desc: '整腸消化', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=DHC益生菌' }, { id: 'm13', type: 'drug', name: 'DHC 葉黃素/蝦紅素', desc: '抗藍光，抗疲勞', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=DHC葉黃' }, { id: 'm14', type: 'drug', name: 'ROIHI-TSUBOKO', desc: '溫感穴位貼片', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=穴位貼' }, { id: 'm15', type: 'drug', name: '合利他命 EX Plus', desc: '緩解眼睛疲勞、肩頸僵硬', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=合利他命' }, { id: 'm16', type: 'drug', name: '樂敦 V 頂級紅鑽', desc: '改善乾眼、老花', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=V紅鑽' }, { id: 'm17', type: 'drug', name: '齒磨撫子 牙膏', desc: '小蘇打美白', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=齒磨撫子' }, { id: 's1', type: 'souvenir', name: '白色戀人', desc: '經典巧克力夾心', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=白色戀人' }, { id: 's2', type: 'souvenir', name: 'HORI 哈密瓜果凍', desc: '夕張哈密瓜口味', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=HORI' }, { id: 's3', type: 'souvenir', name: 'PRESS BUTTER SAND', desc: '北海道限定玉米口味', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=ButterSand' }, { id: 's4', type: 'souvenir', name: '北菓樓 開拓小米菓', desc: '海鮮口味米菓', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=北菓樓' }, { id: 's5', type: 'souvenir', name: 'LeTAO 雙層起司蛋糕', desc: '必買經典', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=LeTAO' }, { id: 's6', type: 'souvenir', name: 'KINOTOYA 起司塔', desc: '新千歲機場必吃', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=KINOTOYA' }, { id: 's7', type: 'souvenir', name: 'Milk Stand 牛奶', desc: '各地牧場直送', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=MilkStand' }, { id: 's8', type: 'souvenir', name: '六花亭 奶油夾心', desc: '蘭姆葡萄口味', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=六花亭' }, { id: 's9', type: 'souvenir', name: '六花亭 酒糖', desc: '寶石般的外觀', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=酒糖' }, { id: 's10', type: 'souvenir', name: 'Oh! 烤玉米', desc: '札幌大通公園名物', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=烤玉米' }, { id: 'o1', type: 'other', name: 'Canon SELPHY CP1500', desc: '小型印相機', done: false, img: 'https://placehold.co/100x100/e5e7eb/4b5563?text=Canon' } ];
+
         document.addEventListener('DOMContentLoaded', () => {
             initItinerary(); 
             initChecklist(); 
@@ -1025,15 +1022,7 @@
                     localStorage.setItem('hk_wallet_v20', JSON.stringify(data.hk_wallet_v20)); 
                     hasUpdate = true; 
                 }
-                if (data.hk_shopping_v20) { 
-                    localStorage.setItem('hk_shopping_v20', JSON.stringify(data.hk_shopping_v20)); 
-                    hasUpdate = true; 
-                }
-                if (data.hk_checks_v20) { 
-                    localStorage.setItem('hk_checks_v20', JSON.stringify(data.hk_checks_v20)); 
-                    hasUpdate = true; 
-                }
-                
+            
                 if (hasUpdate) {
                     // 重新初始化畫面以顯示新資料
                     initItinerary();
@@ -1175,12 +1164,11 @@
             ] } 
         ];
         
-        const defaultShoppingList = [ { id: 'm1', type: 'drug', name: '大正製藥 口內炎貼片', desc: '貼的含類固醇，吸附力好', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=口內炎' }, { id: 'm2', type: 'drug', name: 'Traful 軟膏 PRO QUICK', desc: '抗炎成分，塗抹型', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=Traful' }, { id: 'm3', type: 'drug', name: 'Chocola BB 口內炎噴霧', desc: '殺菌修復，薄荷味', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=BB' }, { id: 'm4', type: 'drug', name: '小林製藥 液體絆創膏', desc: '防水隱形OK繃', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=液體絆' }, { id: 'm5', type: 'drug', name: 'EVE Quick DX', desc: '速效止痛', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=EVE' }, { id: 'm6', type: 'drug', name: 'Loxonin S Premium', desc: '強效止痛', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=Loxonin' }, { id: 'm7', type: 'drug', name: 'PAIR 痘痘藥膏', desc: '消炎殺菌', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=PAIR' }, { id: 'm8', type: 'drug', name: 'Aneron 暈車藥', desc: '長效持續', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=Aneron' }, { id: 'm9', type: 'drug', name: '哆啦A夢 暈車藥', desc: '兒童可用，汽水味', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=哆啦A夢' }, { id: 'm10', type: 'drug', name: 'DHC 速攻藍莓 V-MAX', desc: '護眼，花青素增量', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=DHC藍莓' }, { id: 'm11', type: 'drug', name: '龍角散 Direct', desc: '免水服用，水蜜桃/薄荷', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=龍角散' }, { id: 'm12', type: 'drug', name: 'DHC 乳酸菌/益生菌', desc: '整腸消化', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=DHC益生菌' }, { id: 'm13', type: 'drug', name: 'DHC 葉黃素/蝦紅素', desc: '抗藍光，抗疲勞', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=DHC葉黃' }, { id: 'm14', type: 'drug', name: 'ROIHI-TSUBOKO', desc: '溫感穴位貼片', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=穴位貼' }, { id: 'm15', type: 'drug', name: '合利他命 EX Plus', desc: '緩解眼睛疲勞、肩頸僵硬', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=合利他命' }, { id: 'm16', type: 'drug', name: '樂敦 V 頂級紅鑽', desc: '改善乾眼、老花', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=V紅鑽' }, { id: 'm17', type: 'drug', name: '齒磨撫子 牙膏', desc: '小蘇打美白', done: false, img: 'https://placehold.co/100x100/e2e8f0/4a4a4a?text=齒磨撫子' }, { id: 's1', type: 'souvenir', name: '白色戀人', desc: '經典巧克力夾心', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=白色戀人' }, { id: 's2', type: 'souvenir', name: 'HORI 哈密瓜果凍', desc: '夕張哈密瓜口味', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=HORI' }, { id: 's3', type: 'souvenir', name: 'PRESS BUTTER SAND', desc: '北海道限定玉米口味', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=ButterSand' }, { id: 's4', type: 'souvenir', name: '北菓樓 開拓小米菓', desc: '海鮮口味米菓', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=北菓樓' }, { id: 's5', type: 'souvenir', name: 'LeTAO 雙層起司蛋糕', desc: '必買經典', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=LeTAO' }, { id: 's6', type: 'souvenir', name: 'KINOTOYA 起司塔', desc: '新千歲機場必吃', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=KINOTOYA' }, { id: 's7', type: 'souvenir', name: 'Milk Stand 牛奶', desc: '各地牧場直送', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=MilkStand' }, { id: 's8', type: 'souvenir', name: '六花亭 奶油夾心', desc: '蘭姆葡萄口味', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=六花亭' }, { id: 's9', type: 'souvenir', name: '六花亭 酒糖', desc: '寶石般的外觀', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=酒糖' }, { id: 's10', type: 'souvenir', name: 'Oh! 烤玉米', desc: '札幌大通公園名物', done: false, img: 'https://placehold.co/100x100/fde68a/854d0e?text=烤玉米' }, { id: 'o1', type: 'other', name: 'Canon SELPHY CP1500', desc: '小型印相機', done: false, img: 'https://placehold.co/100x100/e5e7eb/4b5563?text=Canon' } ];
-             // Init Wallet inputs focus
-            document.querySelectorAll('input[type="number"]').forEach(input => {
-                input.addEventListener('focus', function() { this.select(); });
-            });
-            loadFromCloud();
+        
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('focus', function() { this.select(); });
+        });
+        loadFromCloud();
 
         function initItinerary() { const stored = localStorage.getItem('hk_itinerary_v20'); if (stored) { itineraryData = JSON.parse(stored); } else { itineraryData = JSON.parse(JSON.stringify(defaultItinerary)); } }
         // --- 時間計算與輔助工具 ---
@@ -1452,7 +1440,6 @@
                         // 2. 強制同步到雲端 (覆蓋雲端舊資料)
                         if(data.itinerary) saveToCloud('hk_itinerary_v20', data.itinerary);
                         if(data.wallet) saveToCloud('hk_wallet_v20', data.wallet);
-                        if(data.shopping) saveToCloud('hk_shopping_v20', data.shopping);
                         // (其他較小的資料可選擇性同步或等待下次變動)
 
                         showToast('還原成功！正在重新整理...', 'success');
@@ -2034,67 +2021,86 @@
                 renderChecklist(); 
             } 
         }
-
+        // --- 1. 初始化清單 ---
         function initShoppingList() { 
+            // 從手機記憶體 (localStorage) 讀取資料
             let stored = JSON.parse(localStorage.getItem('hk_shopping_v20')); 
-            if (!stored) { 
+            if (!stored|| stored.length === 0) { 
                 stored = JSON.parse(JSON.stringify(defaultShoppingList)); 
                 localStorage.setItem('hk_shopping_v20', JSON.stringify(stored)); 
             } 
+            // 執行畫面渲染
             renderShoppingList(); 
         }
+        // --- 2. 渲染 (顯示) 清單畫面 --
         function renderShoppingList() { 
+            // 讀取資料，如果沒有則給空陣列
             const list = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]'); 
             const container = document.getElementById('shopping-container'); 
+            // 處理篩選邏輯 (全部/藥妝/伴手禮...)
             let filteredList = list; 
             if (currentShoppingFilter !== 'all') { 
                 filteredList = list.filter(item => item.type === currentShoppingFilter); 
             } 
+            // 如果目前分類沒有資料，顯示提示文字
             if (filteredList.length === 0) { 
                 container.innerHTML = '<div class="text-center text-gray-400 text-sm py-4">沒有相關項目</div>'; 
                 return; 
             } 
+            // 生成 HTML
             let html = ''; 
             filteredList.forEach((item) => { 
+                // 判斷是否已購買 (done)，加上半透明和灰階效果
                 const opacityClass = item.done ? 'opacity-50 grayscale' : ''; 
                 const lineThrough = item.done ? 'line-through' : ''; 
+                // 切換勾選圖示顏色 (綠色/灰色
                 const checkIcon = item.done ? 'fa-check-circle text-green-500' : 'fa-circle text-gray-200'; 
+                // 組合單個商品的 HTML 卡片
                 html += `<div class="flex items-start bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm ${opacityClass} transition-all relative group"><div class="w-16 h-16 rounded-md bg-gray-100 dark:bg-gray-900 bg-cover bg-center shrink-0 cursor-pointer" style="background-image: url('${item.img}')" onclick="openImageModal('${item.img}')"></div><div class="flex-1 px-3 min-w-0"><h4 class="text-sm font-bold text-gray-800 dark:text-gray-100 ${lineThrough} truncate">${item.name}</h4><p class="text-[10px] text-gray-500 mt-1 leading-tight line-clamp-2">${item.desc}</p></div><div class="flex flex-col items-center gap-2 ml-2"><button onclick="toggleShoppingCheck('${item.id}')" class="text-xl focus:outline-none"><i class="fas ${checkIcon}"></i></button><div class="flex gap-2 mt-1"><button onclick="openShoppingModal('${item.id}')" class="text-gray-400 hover:text-muji-accent"><i class="fas fa-pen text-xs"></i></button><button onclick="confirmDeleteShopping('${item.id}')" class="text-gray-400 hover:text-red-500"><i class="fas fa-trash text-xs"></i></button></div></div></div>`; 
             }); 
             container.innerHTML = html; 
         }
+        // --- 3. 切換分類按鈕 ---
         function filterShopping(type) { 
-            currentShoppingFilter = type; 
+            currentShoppingFilter = type; // 更新目前的全域篩選狀態
+            // 更新按鈕樣式 (這段是在做 UI 切換，讓選中的按鈕變色)
             const buttons = document.querySelectorAll('#view-shopping button'); 
             buttons.forEach(btn => { 
                 if(btn.parentElement.classList.contains('overflow-x-auto')) { 
+                    // 判斷按鈕文字是否對應目前的 type
                     if(btn.textContent === (type==='all'?'全部':(type==='drug'?'藥妝':(type==='souvenir'?'伴手禮':'其他')))) { 
+                        // 選中樣式 (深色背景)
                         btn.className = "px-3 py-1 bg-muji-accent text-white rounded-full text-xs whitespace-nowrap shadow-sm"; 
                     } else { 
+                        // 未選中樣式 (白色背景)
                         btn.className = "px-3 py-1 bg-white dark:bg-gray-800 border border-gray-200 text-gray-500 rounded-full text-xs whitespace-nowrap"; 
                     } 
                 } 
             }); 
-            renderShoppingList(); 
+            renderShoppingList(); // 重新渲染列表
         }
+        // --- 4. 切換購買狀態 (打勾/取消) ---
         function toggleShoppingCheck(id) { 
             const list = JSON.parse(localStorage.getItem('hk_shopping_v20')); 
-            const item = list.find(i => i.id === id); 
+            const item = list.find(i => i.id === id); // 找到該商品
             if (item) { 
-                item.done = !item.done; 
-                localStorage.setItem('hk_shopping_v20', JSON.stringify(list)); 
-                renderShoppingList(); 
+                item.done = !item.done; // 反轉狀態
+                localStorage.setItem('hk_shopping_v20', JSON.stringify(list)); // 存檔
+                renderShoppingList(); // 更新畫面
             } 
         }
+        // --- 5. 開啟新增/編輯視窗 ---
         function openShoppingModal(id) { 
-            currentShoppingId = id; 
+            currentShoppingId = id; // 設定全域變數，標記現在是編輯哪個 ID (若為 null 則是新增
             const modal = document.getElementById('shopping-edit-modal'); 
             const title = document.getElementById('shopping-modal-title'); 
+            // 清空欄位
             document.getElementById('shop-name').value = ''; 
             document.getElementById('shop-type').value = 'drug'; 
             document.getElementById('shop-desc').value = ''; 
             document.getElementById('shop-photo').value = ''; 
             if(id) { 
+                // 如果有 ID，代表是「編輯模式」，要把舊資料填回去
                 const list = JSON.parse(localStorage.getItem('hk_shopping_v20')); 
                 const item = list.find(i => i.id === id); 
                 if(item) { 
@@ -2106,9 +2112,11 @@
             } else { 
                 title.innerText = "新增必買"; 
             }
+            // 顯示視窗動畫
             modal.classList.remove('hidden');
             setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); modal.querySelector('div').classList.add('scale-100'); }, 10);
         }
+        // --- 6. 關閉視窗 ---
         function closeShoppingModal() { 
             const modal = document.getElementById('shopping-edit-modal'); 
             modal.classList.add('opacity-0'); 
@@ -2116,6 +2124,7 @@
             modal.querySelector('div').classList.add('scale-95'); 
             setTimeout(() => { modal.classList.add('hidden'); currentShoppingId = null; }, 250); 
         }
+        // --- 7. 儲存商品 (含圖片壓縮) ---
         function saveShoppingItem() {
             const name = document.getElementById('shop-name').value.trim();
             const type = document.getElementById('shop-type').value;
@@ -2123,36 +2132,37 @@
             const fileInput = document.getElementById('shop-photo');
 
             if (!name) { alert('請輸入商品名稱'); return; }
-
+            //內部函式：處理資料儲存 (會在圖片處理完後被呼叫)
             const processSave = (img) => {
                 const list = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]');
                 
                 if (currentShoppingId) {
-                    // 修改現有
+                    // --- 編輯模式：找到該項目並更新 --
                     const idx = list.findIndex(i => i.id === currentShoppingId);
                     if (idx > -1) {
                         list[idx].name = name;
                         list[idx].type = type;
                         list[idx].desc = desc;
-                        if (img) list[idx].img = img;
+                        if (img) list[idx].img = img;// 只有當有新圖片時才更新
                     }
                 } else {
-                    // 新增
+                    // --- 新增模式：建立新物件 ---
                     const newItem = {
-                        id: 'c' + Date.now(),
+                        id: 'c' + Date.now(),// 用時間戳記當 ID
                         type: type,
                         name: name,
                         desc: desc,
                         done: false,
                         img: img || 'https://placehold.co/100x100/e5e7eb/4b5563?text=No+Img'
                     };
-                    list.unshift(newItem);
+                    list.unshift(newItem);// 加到最前面
                 }
 
                 try {
                     localStorage.setItem('hk_shopping_v20', JSON.stringify(list));
                     renderShoppingList();
                     closeShoppingModal();
+                    // 如果當下不在這個分類，自動切換過去讓使用者看到
                     if (currentShoppingFilter !== 'all' && currentShoppingFilter !== type) {
                         filterShopping(type);
                     }
@@ -2161,12 +2171,13 @@
                     console.error(e);
                 }
             };
-
+            // --- 圖片處理邏輯 ---
             if (fileInput.files[0]) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
                     img.onload = () => {
+                        // 使用 Canvas 進行圖片壓縮 (因為 LocalStorage 容量有限)
                         const c = document.createElement('canvas');
                         const ctx = c.getContext('2d');
                         const maxW = 300;
@@ -2180,11 +2191,17 @@
                 };
                 reader.readAsDataURL(fileInput.files[0]);
             } else {
+                // 沒有上傳圖片，直接儲存
                 processSave(null);
             }
         }
+        // --- 8. 刪除確認 ---
+        function confirmDeleteShopping(id) { 
+            deleteTarget = 'shopping'; // 標記要刪除的類型
+            deleteShoppingId = id; // 標記要刪除的 ID
+            document.getElementById('confirm-modal').classList.remove('hidden');// 呼叫共用的確認視窗
+        }
 
-        function confirmDeleteShopping(id) { deleteTarget = 'shopping'; deleteShoppingId = id; document.getElementById('confirm-modal').classList.remove('hidden'); }
         function toggleListTab(tab) {
             const viewCheck = document.getElementById('view-checklist');
             const viewShop = document.getElementById('view-shopping');
