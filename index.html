@@ -35,7 +35,7 @@
                         },
                         muji: {
                             bg: '#f9f9f9', card: '#ffffff', text: '#4a4a4a', subtext: '#8a8a8a',
-                            accent: '#7d6c5e', highlight: '#a84a32', border: '#e5e5e5',
+                            accent: 'var(--muji-accent)', highlight: '#a84a32', border: '#e5e5e5',
                             transport: '#eff6ff', transportText: '#3b82f6',// 自訂交通顏色
                             spot: '#f0fdf4', spotText: '#15803d',// 自訂景點顏色
                             food: '#fff7ed', foodText: '#c2410c',// 自訂美食顏色
@@ -95,21 +95,39 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
         /* Progress Bar 進度條*/
         #progress-bar { transition: width 0.3s ease; }
-        /* --- 深色模式標籤優化 --- */
-        .dark .tag-must-eat { background-color: rgba(194, 65, 12, 0.2); color: #fdba74; border-color: #9a3412; }
-        .dark .tag-must-buy { background-color: rgba(190, 24, 93, 0.2); color: #f9a8d4; border-color: #831843; }
-        .dark .tag-reserve { background-color: rgba(133, 77, 14, 0.2); color: #fde047; border-color: #713f12; }
-        .dark .tag-transport { background-color: rgba(29, 78, 216, 0.2); color: #93c5fd; border-color: #1e3a8a; }
+        /* --- 深色模式標籤優化 (更新版：低光害霓虹風格) --- */
+        /* 背景變深 (0.3 -> 0.2)，文字變亮，邊框改為半透明 */
+        .dark .tag-must-eat { background-color: rgba(124, 45, 18, 0.4); color: #fdba74; border: 1px solid rgba(253, 186, 116, 0.2); }
+        .dark .tag-must-buy { background-color: rgba(131, 24, 67, 0.4); color: #fbcfe8; border: 1px solid rgba(251, 207, 232, 0.2); }
+        .dark .tag-reserve { background-color: rgba(113, 63, 18, 0.4); color: #fde047; border: 1px solid rgba(253, 224, 71, 0.2); }
+        .dark .tag-transport { background-color: rgba(30, 58, 138, 0.4); color: #93c5fd; border: 1px solid rgba(147, 197, 253, 0.2); }
+        
         /* 深色模式下的 Event Active 狀態微調 */
-        .dark .event-active { background-color: #a84a32 !important; border-left-color: #fb923c !important; }
-        .dark .event-active h4, .dark .event-active span { color: #fff !important; }
-        /* --- 拖曳排序樣式 --- */
+        /* 選取時改為深灰色底，搭配奶茶色邊框，文字維持白色 */
+        .dark .event-active { background-color: #262626 !important; border-left-color: #d6d3d1 !important; }
+        .dark .event-active h4, .dark .event-active span { color: #f5f5f4 !important; }
+        
+        /* --- 深色模式卡片層次優化 (新增) --- */
+        /* 在深色模式下，幫卡片加上微弱的邊框，取代看不見的陰影 */
+        .dark .shadow-card, .dark .shadow-sm, .dark .shadow-lg {
+            box-shadow: none !important; /* 移除無用的陰影 */
+            border: 1px solid rgba(255, 255, 255, 0.1); /* 加上 10% 白色的細邊框 */
+        }        /* --- 拖曳排序樣式 --- */
         .drag-handle { cursor: grab; touch-action: none; }
         .drag-handle:active { cursor: grabbing; }
         /* 防止拖曳時選取到文字 */
         .sortable-item { user-select: none; }
         /* 拖曳中的半透明效果 */
         .sortable-ghost { opacity: 0.4; background: #f3f4f6; }
+        /* --- 核心配色變數 (新增) --- */
+        :root {
+            /* 淺色模式：原本的深褐灰色 */
+            --muji-accent: #7d6c5e;
+        }
+        .dark {
+            /* 深色模式：改為明亮的奶茶色/淺卡其色，解決對比度不足的問題 */
+            --muji-accent: #d6d3d1;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 h-screen flex justify-center overflow-hidden font-sans">
@@ -255,10 +273,10 @@
                 </div>
             </section>
             <!-- SECTION: WALLET (錢包) -->
-<section id="wallet" class="tab-content h-full">
+            <section id="wallet" class="tab-content h-full">
                 <div class="flex flex-col h-full relative">
                     
-                    <div class="shrink-0 px-4 pt-4 pb-2 bg-muji-bg dark:bg-gray-900 z-10 shadow-sm border-b border-gray-100 dark:border-gray-800">
+                    <div class="shrink-0 z-20 bg-muji-bg dark:bg-gray-900 shadow-sm border-b border-gray-100 dark:border-gray-800 px-4 pt-4 pb-3 transition-colors relative select-text">
                         
                         <div class="bg-gradient-to-br from-stone-600 to-stone-700 text-white p-3 rounded-xl shadow-lg mb-3 relative overflow-hidden">
                             <div class="flex justify-between items-center mb-1 opacity-90">
@@ -268,7 +286,7 @@
                                 </div>
                                 <div class="text-[10px] bg-white dark:bg-black/30 px-2 py-0.5 rounded flex items-center gap-1 shadow-sm">
                                     <span class="mr-1 text-stone-400 dark:text-stone-500">x</span>
-                                    <input type="number" id="exchange-rate" value="0.22" class="w-12 bg-transparent text-center focus:outline-none font-mono font-bold text-stone-700 dark:text-yellow-300" step="0.0001" inputmode="decimal" onfocus="this.select()">
+                                    <input type="number" id="exchange-rate" value="0.22" class="w-12 bg-transparent text-center focus:outline-none font-mono font-bold text-stone-700 dark:text-yellow-300 select-text" step="0.0001" inputmode="decimal" onfocus="this.select()">
                                     <button onclick="fetchExchangeRate(true)" class="ml-1 w-4 h-4 flex items-center justify-center bg-gray-100 dark:bg-white/10 rounded-full hover:bg-gray-200 dark:hover:bg-white/20 transition">
                                         <i class="fas fa-sync-alt text-[8px] text-stone-500 dark:text-stone-300"></i>
                                     </button>
@@ -278,7 +296,7 @@
                                 <div class="flex-1">
                                     <div class="flex items-baseline border-b border-white/20 pb-1">
                                         <span class="text-xs opacity-60 mr-2 text-stone-300">JPY</span>
-                                        <input type="number" id="jpy-input" placeholder="0" class="w-full bg-transparent text-xl font-mono font-bold focus:outline-none placeholder-white/20 text-white" inputmode="decimal" onfocus="this.select()">
+                                        <input type="number" id="jpy-input" placeholder="0" class="w-full bg-transparent text-xl font-mono font-bold focus:outline-none placeholder-white/20 text-white select-text" inputmode="decimal" onfocus="this.select()">
                                     </div>
                                 </div>
                                 <div class="text-white/30 pb-1"><i class="fas fa-arrow-right text-xs"></i></div>
@@ -291,28 +309,43 @@
                             </div>
                         </div>
 
-                        <div class="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-card">
-                            <h3 class="font-bold text-gray-700 dark:text-gray-100 mb-2 text-sm flex justify-between items-center">
-                                <span>新增記帳 <span class="text-[10px] text-gray-400 font-normal">(鎖定匯率)</span></span>
-                                <input type="date" id="expense-date" class="text-[10px] border border-gray-200 rounded px-1 text-gray-500 bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600">
-                            </h3>
-                            <div class="flex gap-2 mb-2">
-                                <select id="expense-payer" class="w-20 px-1 py-1.5 bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-muji-accent"><option value="小戴">小戴</option><option value="佳欣">佳欣</option><option value="佳萱">佳萱</option><option value="玟廷">玟廷</option></select>
-                                <select id="expense-type" class="w-20 px-1 py-1.5 bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-muji-accent ml-1 text-gray-600 dark:text-gray-300 font-bold">
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-card border border-gray-100 dark:border-gray-700 w-full">
+                            
+                            <div class="grid grid-cols-3 gap-2 mb-2">
+                                <select id="expense-payer" class="w-full px-1 py-1.5 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:border-muji-accent">
+                                    <option value="小戴">小戴</option>
+                                    <option value="佳欣">佳欣</option>
+                                    <option value="佳萱">佳萱</option>
+                                    <option value="玟廷">玟廷</option>
+                                </select>
+                                <select id="expense-type" class="w-full px-1 py-1.5 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:border-muji-accent">
                                     <option value="split">公費</option>
                                     <option value="private">私費</option>
                                 </select>
-                                <input type="text" id="expense-item" placeholder="品項名稱" class="flex-1 px-3 py-1.5 bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-muji-accent">
+                                <input type="date" id="expense-date" class="w-full px-1 py-1.5 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs text-gray-500 text-center focus:outline-none focus:border-muji-accent p-0 select-text">
                             </div>
-                            <div class="flex gap-2 mb-2"><input type="number" id="expense-price" placeholder="金額 (日幣)" class="flex-1 px-3 py-1.5 bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-muji-accent" onfocus="this.select()"></div>
-                            <div class="flex gap-2">
-                                 <label class="flex-1 flex items-center justify-center px-4 py-1.5 bg-gray-100 dark:bg-gray-900 text-gray-500 rounded-lg cursor-pointer hover:bg-gray-200 transition text-sm"><i class="fas fa-camera mr-2"></i> <span id="photo-label">拍照</span><input type="file" id="expense-photo" accept="image/*" class="hidden" onchange="document.getElementById('photo-label').innerText = '已選擇'"></label>
-                                <button onclick="addExpense()" class="flex-1 bg-muji-accent text-white py-1.5 rounded-lg shadow-sm hover:opacity-90 transition text-sm font-medium"><i class="fas fa-plus mr-1"></i> 儲存</button>
+
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <input type="text" id="expense-item" placeholder="品項名稱" class="w-full min-w-0 px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-100 focus:outline-none focus:border-muji-accent select-text">
+                                
+                                <input type="number" id="expense-price" placeholder=" ¥ 金額" class="w-full min-w-0 px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-100 focus:outline-none focus:border-muji-accent select-text" onfocus="this.select()">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition text-sm font-bold">
+                                    <i class="fas fa-camera"></i>
+                                    <span id="photo-label" class="text-xs">拍照</span>
+                                    <input type="file" id="expense-photo" accept="image/*" class="hidden" onchange="document.getElementById('photo-label').innerText = '已選'; document.getElementById('photo-label').classList.add('text-muji-accent');">
+                                </label>
+                                
+                                <button onclick="addExpense()" class="w-full bg-muji-accent text-white px-3 py-2 rounded-lg shadow-sm hover:opacity-90 transition text-sm font-bold flex items-center justify-center gap-2">
+                                    <i class="fas fa-plus"></i> 儲存
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <div id="expense-container" class="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-24">
+                    <div id="expense-container" class="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-48">
                         <div class="flex justify-between items-center mb-2 px-1 shrink-0">
                             <h3 class="font-bold text-gray-600 dark:text-gray-300 text-sm">支出紀錄</h3>
                             <div class="flex items-center gap-2">
@@ -794,42 +827,63 @@
         </div>
 
         <!-- EXPENSE EDIT MODAL 新增記帳卡片-->
-        <div id="expense-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden opacity-0 transition-opacity flex items-center justify-center p-4">
+        <div id="expense-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[80] hidden opacity-0 transition-opacity flex items-center justify-center p-4">
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform duration-200">
                 <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 rounded-t-xl">
                     <h3 class="font-bold text-gray-700 dark:text-gray-100">編輯支出</h3>
                     <button type="button" onclick="closeExpenseEditModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-300"><i class="fas fa-times"></i></button>
                 </div>
-                <div class="p-5 space-y-4">
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-card border border-gray-100 dark:border-gray-700">
+                    
+                    <div class="flex gap-2 mb-3">
+                        <select id="edit-expense-payer" class="w-1/4 px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:border-muji-accent">
+                            <option value="小戴">小戴</option>
+                            <option value="佳欣">佳欣</option>
+                            <option value="佳萱">佳萱</option>
+                            <option value="玟廷">玟廷</option>
+                        </select>
+                        <select id="edit-expense-type" class="w-1/4 px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:border-muji-accent">
+                            <option value="split">公費</option>
+                            <option value="private">私費</option>
+                        </select>
+                        <input type="date" id="edit-expense-date" class="flex-1 px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs text-gray-500 text-center focus:outline-none focus:border-muji-accent">
+                    </div>
+
+                    <div class="mb-3">
+                        <input type="text" id="edit-expense-item" placeholder="品項名稱" class="w-full px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-100 focus:outline-none focus:border-muji-accent select-text">
+                    </div>
+
                     <div class="flex gap-2">
-                        <div class="w-1/2">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">付款人</label>
-                            <select id="edit-expense-payer" class="w-full p-2 border border-gray-200 rounded text-sm bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600">
-                                <option value="小戴">小戴</option>
-                                <option value="佳欣">佳欣</option>
-                                <option value="佳萱">佳萱</option>
-                                <option value="玟廷">玟廷</option>
-                            </select>
+                        <div class="relative flex-[1.5]">
+                            <input type="number" id="edit-expense-price" placeholder="日幣金額" class="w-full px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-100 focus:outline-none focus:border-muji-accent select-text" oninput="calcTwdInEdit()" onfocus="this.select()">
+                            <span class="absolute right-2 top-2.5 text-[10px] text-gray-400 pointer-events-none">JPY</span>
                         </div>
-                        <div class="w-1/2">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">類型</label>
-                            <select id="edit-expense-type" class="w-full p-2 border border-gray-200 rounded text-sm font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600">
-                                <option value="split">公費 (分帳)</option>
-                                <option value="private">私費 (個人)</option>
-                            </select>
+
+                        <div class="relative flex-1">
+                            <input type="number" id="edit-expense-rate" placeholder="匯率" step="0.0001" class="w-full px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-500 dark:text-gray-300 text-center focus:outline-none focus:border-muji-accent select-text" oninput="calcTwdInEdit()" onfocus="this.select()">
+                            <span class="absolute right-2 top-2.5 text-[10px] text-gray-400 pointer-events-none">匯率</span>
                         </div>
+
+                        <div id="edit-qty-wrapper" class="hidden w-16 relative shrink-0">
+                            <input type="number" id="edit-expense-qty" placeholder="1" class="w-full px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-100 text-center focus:outline-none focus:border-muji-accent select-text">
+                            <span class="absolute right-2 top-2.5 text-[10px] text-gray-400 pointer-events-none">個</span>
+                        </div>
+                        
+                        <input type="hidden" id="edit-expense-twd">
                     </div>
-                    <div><label class="block text-xs font-bold text-gray-500 mb-1">品項</label><input type="text" id="edit-expense-item" class="w-full p-2 border border-gray-200 rounded text-sm"></div>
-                    <div><label class="block text-xs font-bold text-gray-500 mb-1">日期</label><input type="date" id="edit-expense-date" class="w-full p-2 border border-gray-200 rounded text-sm bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600"></div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-xs font-bold text-gray-500 mb-1">日幣金額 <span class="text-red-500">*</span></label><input type="number" id="edit-expense-price" class="w-full p-2 border border-gray-200 rounded text-sm bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600" oninput="calcTwdInEdit()" placeholder="0" onfocus="this.select()"></div>
-                        <div><label class="block text-xs font-bold text-gray-500 mb-1">當時匯率</label><input type="number" id="edit-expense-rate" class="w-full p-2 border border-gray-200 rounded text-sm bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600" step="0.0001" oninput="calcTwdInEdit()" onfocus="this.select()"></div>
-                    </div>
-                    <div><label class="block text-xs font-bold text-gray-500 mb-1">台幣金額 (可微調)</label><input type="number" id="edit-expense-twd" class="w-full p-2 border border-gray-200 rounded text-sm font-bold text-muji-accent" oninput="calcRateInEdit()" onfocus="this.select()"></div>
-                    <div><label class="block text-xs font-bold text-gray-500 mb-1">照片</label><input type="file" id="edit-expense-photo" accept="image/*" class="w-full text-xs"></div>
+
                 </div>
-                <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex gap-3">
-                    <button type="button" onclick="saveExpenseEdit()" class="flex-1 px-4 py-2 bg-muji-accent text-white rounded text-sm font-bold shadow-sm hover:opacity-90 transition">儲存修改</button>
+                <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 bg-gray-50 dark:bg-stone-900 rounded-b-xl">
+                    
+                    <label class="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm font-bold">
+                        <i class="fas fa-camera"></i>
+                        <span id="edit-photo-label" class="text-xs whitespace-nowrap">照片</span>
+                        <input type="file" id="edit-expense-photo" accept="image/*" class="hidden" onchange="document.getElementById('edit-photo-label').innerText = '已選'; document.getElementById('edit-photo-label').classList.add('text-muji-accent');">
+                    </label>
+
+                    <button type="button" onclick="saveExpenseEdit()" class="flex-1 px-4 py-2.5 bg-muji-accent text-white rounded-lg text-sm font-bold shadow-sm hover:opacity-90 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-check"></i> 儲存
+                    </button>
                 </div>
             </div>
         </div>
@@ -945,7 +999,7 @@
                     <div class="flex gap-3">
                         <div class="flex-1">
                             <label class="block text-xs font-bold text-gray-500 mb-1">單價 (日幣)</label>
-                            <input type="number" id="shop-price" class="w-full p-2 border border-gray-200 rounded text-sm bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600" placeholder="0">
+                            <input type="number" id="shop-price" class="w-full h-9 p-0 text-center border-t border-b border-gray-200 rounded text-sm font-bold" placeholder="輸入預設單價">
                         </div>
                         <div class="w-1/3">
                             <label class="block text-xs font-bold text-gray-500 mb-1">數量</label>
@@ -1063,7 +1117,7 @@
         }
     // --- 系統備份與還原功能 ---
 
-        // 1. 匯出完整備份 (JSON)
+        // 1. 匯出完整備份 (JSON) - 修正版
         function exportFullBackup() {
             const data = {
                 meta: {
@@ -1071,10 +1125,18 @@
                     date: new Date().toISOString(),
                     app: "Hokkaido_Trip_2025"
                 },
+                // 共用資料
                 itinerary: JSON.parse(localStorage.getItem('hk_itinerary_v20') || '[]'),
                 wallet: JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'),
-                shopping: JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]'),
-                checklist: JSON.parse(localStorage.getItem('hk_checks_v20') || '[]'),
+                
+                // 私人資料 (必買)
+                shopping: JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]'), // 商品清單
+                shopCats: JSON.parse(localStorage.getItem('hk_shop_cats_v20') || '[]'), // ★★★ 補上：必買分類 ★★★
+                
+                // 私人資料 (行前)
+                // 註：行前清單的結構本身就包含分類 (category) 與項目 (items)，所以備份這一個就夠了
+                checklist: JSON.parse(localStorage.getItem('hk_checks_v20') || '[]'), 
+                
                 rate: localStorage.getItem('hk_rate_v1') || '0.22'
             };
 
@@ -1293,6 +1355,7 @@
         let deleteShoppingId = null;
         let deleteChecklistCatIdx = null; 
         let deleteChecklistItemIdx = null;
+        let pendingShoppingId = null;
         
      // --- 深色模式切換功能 ---
         function initDarkMode() {
@@ -1589,7 +1652,7 @@
                     <i class="fas ${icon} text-2xl text-gray-300 dark:text-gray-500"></i>
                 </div>
                 <p class="text-sm text-gray-400 font-bold">${message}</p>
-                <p class="text-xs text-gray-300 mt-1">點擊右下角 + 按鈕新增</p>
+                <p class="text-xs text-gray-300 mt-1">點擊 + 按鈕新增</p>
             </div>`;
         }
         // --- 時間計算與輔助工具 ---
@@ -1897,26 +1960,29 @@
                     showToast('行程已刪除並調整時間'); 
                 } catch(e) { console.error(e); } 
             }
-            // ★★★ 新增：系統還原邏輯 ★★★
+            // 系統還原邏輯 (含必買分類修正)
             else if (deleteTarget === 'system-restore') {
                 const data = window.tempRestoreData;
                 if (data) {
                     try {
-                        // 1. 寫入 LocalStorage
+                        // 1. 寫入 LocalStorage (還原所有資料到手機)
                         if(data.itinerary) localStorage.setItem('hk_itinerary_v20', JSON.stringify(data.itinerary));
                         if(data.wallet) localStorage.setItem('hk_wallet_v20', JSON.stringify(data.wallet));
+                        
+                        // 還原私人資料
                         if(data.shopping) localStorage.setItem('hk_shopping_v20', JSON.stringify(data.shopping));
+                        // ★★★ 補上：還原必買分類 ★★★
+                        if(data.shopCats) localStorage.setItem('hk_shop_cats_v20', JSON.stringify(data.shopCats)); 
+                        
                         if(data.checklist) localStorage.setItem('hk_checks_v20', JSON.stringify(data.checklist));
                         if(data.rate) localStorage.setItem('hk_rate_v1', data.rate);
 
-                        // 2. 強制同步到雲端 (覆蓋雲端舊資料)
+                        // 2. 強制同步到雲端 (僅同步行程與錢包，私人資料不傳)
                         if(data.itinerary) saveToCloud('hk_itinerary_v20', data.itinerary);
                         if(data.wallet) saveToCloud('hk_wallet_v20', data.wallet);
-                        // (其他較小的資料可選擇性同步或等待下次變動)
 
                         showToast('還原成功！重新整理中', 'success');
                         
-                        // 3. 延遲 1.5 秒後重新整理頁面，載入新資料
                         setTimeout(() => {
                             window.tempRestoreData = null;
                             location.reload();
@@ -1926,8 +1992,7 @@
                         console.error(e);
                     }
                 }
-            }
-            // ... (以下維持您原本的其他刪除邏輯) ...
+            }           
             else if (deleteTarget === 'itinerary-reset') { 
                 localStorage.removeItem('hk_itinerary_v20'); 
                 initItinerary(); 
@@ -2227,36 +2292,96 @@
                 totalEl.innerText = `¥${total.toLocaleString()}`;
             }
         }
+
+// --- 開啟新增記帳視窗 (一般模式) ---
+        function openExpenseModal() {
+            currentExpenseId = null; // 新增模式
+            
+            // 1. 清空欄位
+            document.getElementById('edit-expense-payer').value = '小戴';
+            document.getElementById('edit-expense-type').value = 'split';
+            document.getElementById('edit-expense-item').value = '';
+            document.getElementById('edit-expense-price').value = '';
+            
+            // ★★★ 2. 強制隱藏數量欄位 (還原介面) ★★★
+            document.getElementById('edit-qty-wrapper').classList.add('hidden');
+            document.getElementById('edit-expense-qty').value = '1'; 
+
+            // 3. 匯率與日期設定
+            const currentRate = localStorage.getItem('hk_rate_v1') || 0.22;
+            document.getElementById('edit-expense-rate').value = currentRate;
+            document.getElementById('edit-expense-twd').value = '';
+            
+            document.getElementById('edit-expense-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('edit-expense-photo').value = '';
+            const label = document.getElementById('edit-photo-label');
+            if(label) label.innerText = '更新照片';
+
+            // 4. 設定標題
+            const modal = document.getElementById('expense-edit-modal');
+            const title = modal.querySelector('h3');
+            if(title) title.innerText = "新增支出";
+            
+            // 5. 顯示動畫
+            modal.classList.remove('hidden');
+            setTimeout(() => { 
+                modal.classList.remove('opacity-0'); 
+                modal.querySelector('div').classList.remove('scale-95'); 
+                modal.querySelector('div').classList.add('scale-100'); 
+            }, 10);
+        }
+        // --- 開啟編輯記帳視窗 (編輯模式) ---
         function openExpenseEdit(id) { 
-        const list = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); 
-        const expense = list.find(e => e.id === id); 
-        if (!expense) return; 
-        currentExpenseId = id; 
-        
-        document.getElementById('edit-expense-payer').value = expense.payer || '小戴'; 
-        // 讀取並填入類型，預設為 split
-        document.getElementById('edit-expense-type').value = expense.type || 'split'; 
-        
-        document.getElementById('edit-expense-item').value = expense.item; 
-        document.getElementById('edit-expense-price').value = expense.price; 
-        
-        document.getElementById('edit-expense-date').value = expense.date || new Date().toISOString().split('T')[0];
+            const list = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); 
+            const expense = list.find(e => e.id === id); 
+            if (!expense) return; 
+            
+            currentExpenseId = id; 
+            
+            // 1. 填入基本資料
+            document.getElementById('edit-expense-payer').value = expense.payer || '小戴'; 
+            document.getElementById('edit-expense-type').value = expense.type || 'split'; 
+            document.getElementById('edit-expense-item').value = expense.item; 
+            document.getElementById('edit-expense-price').value = expense.price; 
+            document.getElementById('edit-expense-date').value = expense.date || new Date().toISOString().split('T')[0];
 
-        const r = expense.rate || 0.22;
-        const t = expense.twd || Math.round(expense.price * r);
-        
-        document.getElementById('edit-expense-rate').value = r;
-        document.getElementById('edit-expense-twd').value = t;
+            // 2. 處理匯率與台幣
+            const r = expense.rate || 0.22;
+            const t = expense.twd || Math.round(expense.price * r);
+            document.getElementById('edit-expense-rate').value = r;
+            document.getElementById('edit-expense-twd').value = t;
 
-        document.getElementById('edit-expense-photo').value = ''; 
-        const modal = document.getElementById('expense-edit-modal'); 
-        modal.classList.remove('hidden'); 
-        setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); modal.querySelector('div').classList.add('scale-100'); }, 10); 
+            // ★★★ 3. 關鍵修正：強制隱藏數量欄位 ★★★
+            // 因為這是編輯「已存在的記帳」，不需要修改購買數量
+            document.getElementById('edit-qty-wrapper').classList.add('hidden');
+            document.getElementById('edit-expense-qty').value = '1';
+
+            // 4. 重置標題
+            const modal = document.getElementById('expense-edit-modal');
+            const title = modal.querySelector('h3');
+            if(title) title.innerText = "編輯支出";
+
+            // 5. 圖片與顯示
+            document.getElementById('edit-expense-photo').value = ''; 
+            const label = document.getElementById('edit-photo-label');
+            if(label) label.innerText = expense.img ? '更換照片' : '補傳照片';
+
+            modal.classList.remove('hidden'); 
+            setTimeout(() => { 
+                modal.classList.remove('opacity-0'); 
+                modal.querySelector('div').classList.remove('scale-95'); 
+                modal.querySelector('div').classList.add('scale-100'); 
+            }, 10); 
         }
 
+// --- 自動計算台幣 (當日幣或匯率變動時觸發) ---
         function calcTwdInEdit() {
+            // 取得日幣金額
             const jpy = parseFloat(document.getElementById('edit-expense-price').value) || 0;
+            // 取得目前輸入框中的匯率
             const rate = parseFloat(document.getElementById('edit-expense-rate').value) || 0;
+            
+            // 計算並寫入隱藏的台幣欄位
             document.getElementById('edit-expense-twd').value = Math.round(jpy * rate);
         }
 
@@ -2269,10 +2394,23 @@
             }
         }
 
-        function closeExpenseEditModal() { const modal = document.getElementById('expense-edit-modal'); modal.classList.add('opacity-0'); modal.querySelector('div').classList.remove('scale-100'); modal.querySelector('div').classList.add('scale-95'); setTimeout(() => { modal.classList.add('hidden'); currentExpenseId = null; }, 250); }
-        
+        function closeExpenseEditModal() { 
+            const modal = document.getElementById('expense-edit-modal'); 
+            modal.classList.add('opacity-0'); 
+            modal.querySelector('div').classList.remove('scale-100'); 
+            modal.querySelector('div').classList.add('scale-95'); 
+            setTimeout(() => { 
+                modal.classList.add('hidden'); 
+                currentExpenseId = null; 
+                
+                // ★★★ 新增：如果是取消，也要清空暫存 ID ★★★
+                pendingShoppingId = null; 
+                
+            }, 250); 
+        }       
+        // --- 儲存編輯或新增的記帳資料  --- 
         function saveExpenseEdit() { 
-            if (!currentExpenseId) return; 
+            // 1. 取得欄位資料
             const payer = document.getElementById('edit-expense-payer').value; 
             const type = document.getElementById('edit-expense-type').value; 
             const item = document.getElementById('edit-expense-item').value; 
@@ -2282,25 +2420,71 @@
             const dateVal = document.getElementById('edit-expense-date').value;
             const fileInput = document.getElementById('edit-expense-photo'); 
             
+            // ★ 讀取數量 (若欄位隱藏或空白，預設為 1，避免除以 0)
+            const qtyInput = document.getElementById('edit-expense-qty');
+            const newQty = parseInt(qtyInput.value) || 1;
+
+            // 2. 驗證
             if (!item || isNaN(price)) { showToast("請填寫完整", 'error'); return; } 
             
-            const updateList = (newImg) => { 
+            // 3. 存檔邏輯
+            const processSave = (newImg) => { 
                 const list = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]'); 
-                const idx = list.findIndex(e => e.id === currentExpenseId); 
-                if (idx > -1) { 
-                    list[idx] = { ...list[idx], payer, type, item, price, rate, twd, date: dateVal };
-                    if (newImg) list[idx].img = newImg; 
+                
+                if (currentExpenseId) {
+                    // 修改模式
+                    const idx = list.findIndex(e => e.id === currentExpenseId); 
+                    if (idx > -1) { 
+                        const finalImg = newImg !== null ? newImg : list[idx].img;
+                        list[idx] = { ...list[idx], payer, type, item, price, rate, twd, date: dateVal, img: finalImg };
+                        showToast("修改成功", 'success');
+                    }
+                } else {
+                    // 新增模式
+                    const newId = Date.now();
+                    list.unshift({ id: newId, payer, type, item, price, rate, twd, date: dateVal, img: newImg || '' });
+                    showToast("記帳成功", 'success');
+                }
+
+                // 4. 更新記帳資料庫
+                localStorage.setItem('hk_wallet_v20', JSON.stringify(list)); 
+                const cleanList = list.map(d => ({...d, img: ''}));
+                saveToCloud('hk_wallet_v20', cleanList);
+                renderExpenseList(); 
+                
+                // ★★★ 5. 連動：回填數量與計算單價 ★★★
+                if (pendingShoppingId) {
+                    const shopList = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]');
+                    const shopItem = shopList.find(i => i.id === pendingShoppingId);
                     
-                    localStorage.setItem('hk_wallet_v20', JSON.stringify(list)); 
-                    const cleanList = list.map(d => ({...d, img: ''}));
-                    saveToCloud('hk_wallet_v20', cleanList);
-                    
-                    renderExpenseList(); 
-                    closeExpenseEditModal(); 
-                    showToast("修改成功並同步", 'success');
-                }   
+                    if (shopItem) {
+                        shopItem.done = true; // 打勾
+                        
+                        // 回填新的數量
+                        shopItem.qty = newQty; 
+                        
+                        // 回填新的單價 (總金額 / 數量，並四捨五入)
+                        if (newQty > 0) {
+                            shopItem.price = Math.round(price / newQty);
+                        }
+
+                        localStorage.setItem('hk_shopping_v20', JSON.stringify(shopList));
+                        
+                        // 更新清單畫面
+                        const viewShopping = document.getElementById('view-shopping');
+                        if (viewShopping && !viewShopping.classList.contains('hidden')) {
+                            renderShoppingList();
+                        }
+                        showToast("已更新必買清單金額與數量", 'success');
+                    }
+                    pendingShoppingId = null; // 重置
+                }
+                // ★★★★★★★★★★★★★★★★★★★★★★★★★
+
+                closeExpenseEditModal(); 
             };
             
+            // 6. 圖片處理
             if (fileInput.files[0]) { 
                 const reader = new FileReader(); 
                 reader.onload = (e) => { 
@@ -2310,16 +2494,20 @@
                         const maxW = 300; const scale = maxW / img.width; 
                         c.width = maxW; c.height = img.height * scale; 
                         ctx.drawImage(img, 0, 0, c.width, c.height); 
-                        updateList(c.toDataURL('image/jpeg', 0.3)); 
+                        processSave(c.toDataURL('image/jpeg', 0.3)); 
                     }; 
                     img.src = e.target.result; 
                 }; 
                 reader.readAsDataURL(fileInput.files[0]); 
-            } else { updateList(null); } 
-        }        
+            } else { 
+                processSave(null); 
+            } 
+        }
+        // --- 刪除消費紀錄確認視窗 ---
         function confirmDeleteExpense(id) { deleteTarget = 'expense-single'; deleteExpenseId = id; document.getElementById('confirm-msg').innerText="確定刪除此筆消費？"; document.getElementById('confirm-modal').classList.remove('hidden'); setTimeout(() => document.getElementById('confirm-box').classList.remove('scale-95'), 10); }
+        // --- 清除所有記帳資料確認視窗 ---
         function clearExpenses() { deleteTarget = 'expense-clear'; document.getElementById('confirm-msg').innerText="確定清除所有記帳資料？"; document.getElementById('confirm-modal').classList.remove('hidden'); setTimeout(() => document.getElementById('confirm-box').classList.remove('scale-95'), 10); }
-        
+        // --- 匯出記帳與必買清單資料 ---
         function exportData() {
             const wallet = JSON.parse(localStorage.getItem('hk_wallet_v20') || '[]');
             const shopping = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]');
@@ -2408,7 +2596,14 @@
             const modal = document.getElementById('split-bill-modal'); 
             modal.classList.remove('hidden'); 
             setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); modal.querySelector('div').classList.add('scale-100'); }, 10); 
-        }        function closeSplitBillModal() { const modal = document.getElementById('split-bill-modal'); modal.classList.add('opacity-0'); modal.querySelector('div').classList.remove('scale-100'); modal.querySelector('div').classList.add('scale-95'); setTimeout(() => { modal.classList.add('hidden'); }, 250); }
+        }        
+        function closeSplitBillModal() {
+            const modal = document.getElementById('split-bill-modal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('div').classList.remove('scale-100');
+            modal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 250);
+        }
         
         // --- UPDATED: CHECKLIST LOGIC (Collapsible, Default Closed) ---
         function initChecklist() {
@@ -2701,18 +2896,61 @@
             }); 
             renderShoppingList(); // 重新渲染列表
         }
-        // --- 4. 切換購買狀態 (打勾/取消) ---
+        // --- 4. 切換購買狀態 (修改版：連動記帳) ---
         function toggleShoppingCheck(id) { 
             const list = JSON.parse(localStorage.getItem('hk_shopping_v20')); 
-            const item = list.find(i => i.id === id); // 找到該商品
+            const item = list.find(i => i.id === id); 
+            
             if (item) { 
-                item.done = !item.done; // 反轉狀態
-                localStorage.setItem('hk_shopping_v20', JSON.stringify(list)); // 存檔
-                renderShoppingList(); // 更新畫面
+                // 情境 A: 使用者想「取消勾選」 (原本是已購買 -> 改成未購買)
+                // 直接執行，不需要問
+                if (item.done) {
+                    item.done = false;
+                    localStorage.setItem('hk_shopping_v20', JSON.stringify(list));
+                    renderShoppingList();
+                } 
+                // 情境 B: 使用者想「打勾」 (原本是未購買 -> 改成已購買)
+                // 觸發連動記帳流程
+                else {
+                    pendingShoppingId = id; // 1. 記住這個商品 ID
+                    promptExpenseForShopping(item); // 2. 開啟記帳視窗
+                }
             } 
         }
-        // --- 5. 開啟新增/編輯視窗 ---
-// --- 必買清單分類管理系統 ---
+// --- 連動：開啟記帳視窗並帶入商品資料 (含數量) ---
+        function promptExpenseForShopping(item) {
+            // 1. 開啟視窗
+            openExpenseModal(); 
+            
+            // 2. 修改標題
+            const modal = document.getElementById('expense-edit-modal');
+            const title = modal.querySelector('h3');
+            if(title) title.innerText = "新增記帳 (來自必買清單)";
+
+            // 3. 填入商品名稱
+            document.getElementById('edit-expense-item').value = item.name;
+
+            // ★★★ 4. 顯示並填入數量欄位 ★★★
+            const qtyWrapper = document.getElementById('edit-qty-wrapper');
+            const qtyInput = document.getElementById('edit-expense-qty');
+            
+            // 移除 hidden 讓它跑出來
+            qtyWrapper.classList.remove('hidden');
+            // 填入原本清單設定的數量 (預設為 1)
+            qtyInput.value = item.qty || 1;
+
+            // 5. 計算總價 (單價 x 數量)
+            const total = (item.price || 0) * (item.qty || 1);
+            if (total > 0) {
+                document.getElementById('edit-expense-price').value = total;
+                if (typeof calcTwdInEdit === 'function') calcTwdInEdit();
+            }
+            
+            // 6. 預設分類為「私費」
+            document.getElementById('edit-expense-type').value = 'private'; 
+        }
+    // --- 5. 開啟新增/編輯視窗 ---
+    // --- 必買清單分類管理系統 ---
 
     // 1. 初始化分類 (如果沒有資料，則建立預設值)
     function initShoppingCats() {
