@@ -625,7 +625,7 @@
                         <h2 class="text-lg font-bold text-gray-700 dark:text-gray-100">購物優惠券</h2>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-3 mb-8 shrink-0">
+                    <div class="grid grid-cols-4 gap-3 mb-8 shrink-0">
                         
                         <button onclick="openImageModal('札幌藥妝.jpg')" class="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center gap-2 hover:shadow-md hover:border-pink-300 transition group h-24">
                             <div class="w-8 h-8 rounded-full bg-pink-50 dark:bg-pink-900/30 flex items-center justify-center text-pink-500 group-hover:scale-110 transition-transform">
@@ -681,6 +681,16 @@
                                 <div class="text-[9px] text-gray-400 mt-0.5">10+最高5%</div>
                             </div>
                         </button>
+                        <button onclick="openImageModal('BicCamera.jpg')" class="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center gap-2 hover:shadow-md hover:border-red-300 transition group h-24">
+                            <div class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                            <div class="text-center leading-tight">
+                                <div class="text-xs font-bold text-gray-700 dark:text-gray-100">BicCamera</div>
+                                <div class="text-[9px] text-gray-400 mt-0.5">10+最高7%</div>
+                            </div>
+                        </button>
+
                         </div>
 
                     </div>
@@ -999,7 +1009,7 @@
                     <div class="flex gap-3">
                         <div class="flex-1">
                             <label class="block text-xs font-bold text-gray-500 mb-1">單價 (日幣)</label>
-                            <input type="number" id="shop-price" class="w-full h-9 p-0 text-center border-t border-b border-gray-200 rounded text-sm font-bold" placeholder="輸入預設單價">
+                        <input type="number" id="shop-price" class="w-full h-9 p-0 text-center border-t border-b border-gray-200 rounded text-sm font-bold" placeholder="輸入預設單價">
                         </div>
                         <div class="w-1/3">
                             <label class="block text-xs font-bold text-gray-500 mb-1">數量</label>
@@ -2855,14 +2865,20 @@
                 }
                 // ★★★★★★★★★★★★★★★★★★
 
-                html += `
-                <div class="flex items-start bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm ${opacityClass} transition-all relative group">
+        html += `
+                <div class="flex items-start bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm ${opacityClass} transition-all relative group sortable-item" data-id="${item.id}">
+                    
+                    <div class="drag-handle self-center mr-3 text-gray-300 hover:text-muji-accent cursor-grab active:cursor-grabbing p-1">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+
                     <div class="w-16 h-16 rounded-md bg-gray-100 dark:bg-gray-900 bg-cover bg-center shrink-0 cursor-pointer" style="background-image: url('${item.img}')" onclick="openImageModal('${item.img}')"></div>
                     
                     <div class="flex-1 px-3 min-w-0">
                         <h4 class="text-sm font-bold text-gray-800 dark:text-gray-100 ${lineThrough} truncate">${item.name}</h4>
                         <p class="text-[10px] text-gray-500 mt-0.5 leading-tight line-clamp-1">${item.desc}</p>
-                        ${priceHtml} </div>
+                        ${priceHtml} 
+                    </div>
                     
                     <div class="flex flex-col items-center gap-2 ml-2 pt-1">
                         <button onclick="toggleShoppingCheck('${item.id}')" class="text-xl focus:outline-none transition-transform active:scale-90">
@@ -2873,9 +2889,79 @@
                             <button onclick="confirmDeleteShopping('${item.id}')" class="text-gray-400 hover:text-red-500"><i class="fas fa-trash text-xs"></i></button>
                         </div>
                     </div>
-                </div>`; 
-            }); 
+                </div>`;
+            });
             container.innerHTML = html; 
+            // ★★★ 新增：必買清單拖曳初始化 (全分類通用) ★★★
+            if (window.shopSortable) window.shopSortable.destroy();
+
+            window.shopSortable = Sortable.create(container, {
+                handle: '.drag-handle', // 指定只能拉這個手柄
+                animation: 150,
+                ghostClass: 'bg-gray-100', // 拖曳時的殘影背景
+                delay: 100, // 手機防誤觸
+                delayOnTouchOnly: true,
+                onEnd: function (evt) {
+                    // 拖曳結束後，執行存檔
+                    handleShopSortWithFilter();
+                }
+            });
+        }
+// --- 處理必買清單排序 (支援分類篩選的填空演算法) ---
+        function handleShopSortWithFilter() {
+            // 1. 讀取原始大清單
+            const fullList = JSON.parse(localStorage.getItem('hk_shopping_v20') || '[]');
+            
+            // 2. 取得目前畫面上排序後的 ID 列表 (從 DOM 抓取)
+            const container = document.getElementById('shopping-container');
+            const newOrderIds = Array.from(container.children).map(el => el.getAttribute('data-id'));
+
+            // 3. 找出這些項目在原始清單中的「索引位置 (Slots)」
+            // 這些是我們要回填的坑洞
+            let slots = [];
+            fullList.forEach((item, index) => {
+                // 如果這個項目存在於目前的篩選畫面中
+                if (newOrderIds.includes(item.id)) {
+                    slots.push(index);
+                }
+            });
+
+            // 4. 開始回填
+            // slots 陣列記錄了原本的索引 (例如 [0, 2, 5])
+            // newOrderIds 記錄了新的商品順序 (例如 [C, A, B])
+            // 我們要把 C 填入 0, A 填入 2, B 填入 5
+            
+            slots.forEach((originalIndex, i) => {
+                const targetId = newOrderIds[i]; // 取得新順序中的第 i 個 ID
+                const itemData = fullList.find(item => item.id === targetId); // 找回該 ID 的完整資料
+                
+                // 將資料填回原始清單的坑洞中
+                // 注意：這裡我們直接修改 fullList 的指定位置
+                // 為了避免 find 找不到 (理論上不會)，加個保險
+                if (itemData) {
+                    // 因為 find 是傳參考 (Reference)，直接賦值可能會錯亂，建議重新構建
+                    // 但因為我們要「覆蓋」該位置，所以直接指派是最快的方法
+                    // 但要注意：fullList[originalIndex] 必須被「新順序的物件」取代
+                    
+                    // 技巧：我們不能直接用 find 出來的物件，因為它位置已經變了
+                    // 我們需要一個暫存 map 或是每次重新 find
+                    // 更高效的寫法：
+                }
+            });
+
+            // --- 優化版回填演算法 ---
+            // 1. 先把目前畫面上的項目資料抓出來，依照新順序排好
+            const sortedItems = newOrderIds.map(id => fullList.find(item => item.id === id));
+            
+            // 2. 依序填入原本的坑洞
+            slots.forEach((slotIndex, i) => {
+                fullList[slotIndex] = sortedItems[i];
+            });
+
+            // 5. 存檔
+            localStorage.setItem('hk_shopping_v20', JSON.stringify(fullList));
+            
+            showToast('排序已更新', 'success');
         }
         // --- 3. 切換分類按鈕 ---
         function filterShopping(type) { 
