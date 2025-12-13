@@ -837,63 +837,74 @@
         </div>
 
         <!-- EXPENSE EDIT MODAL 新增記帳卡片-->
-        <div id="expense-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[80] hidden opacity-0 transition-opacity flex items-center justify-center p-4">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform duration-200">
-                <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 rounded-t-xl">
-                    <h3 class="font-bold text-gray-700 dark:text-gray-100">編輯支出</h3>
-                    <button type="button" onclick="closeExpenseEditModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-300"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-card border border-gray-100 dark:border-gray-700">
+<div id="expense-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[80] hidden opacity-0 transition-opacity overflow-y-auto">
+            
+            <div class="flex min-h-full items-center justify-center p-4 text-center">
+
+                <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm transform transition-all flex flex-col text-left overflow-hidden" onclick="event.stopPropagation()">
                     
-                    <div class="flex gap-2 mb-3">
-                        <select id="edit-expense-payer" class="w-1/4 px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:border-muji-accent">
-                            <option value="小戴">小戴</option>
-                            <option value="佳欣">佳欣</option>
-                            <option value="佳萱">佳萱</option>
-                            <option value="玟廷">玟廷</option>
-                        </select>
-                        <select id="edit-expense-type" class="w-1/4 px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:border-muji-accent">
-                            <option value="split">公費</option>
-                            <option value="private">私費</option>
-                        </select>
-                        <input type="date" id="edit-expense-date" class="flex-1 px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs text-gray-500 text-center focus:outline-none focus:border-muji-accent">
+                    <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-stone-900 dark:border-stone-700 shrink-0">
+                        <h3 class="font-bold text-gray-700 dark:text-gray-100">編輯支出</h3>
+                        <button type="button" onclick="closeExpenseEditModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-300"><i class="fas fa-times"></i></button>
                     </div>
 
-                    <div class="mb-3">
-                        <input type="text" id="edit-expense-item" placeholder="品項名稱" class="w-full px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-100 focus:outline-none focus:border-muji-accent select-text">
-                    </div>
-
-                    <div class="flex gap-2">
-                        <div class="relative flex-[1.5]">
-                            <input type="number" id="edit-expense-price" placeholder="日幣金額" class="w-full px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-100 focus:outline-none focus:border-muji-accent select-text" oninput="calcTwdInEdit()" onfocus="this.select()">
-                            <span class="absolute right-2 top-2.5 text-[10px] text-gray-400 pointer-events-none">JPY</span>
+                    <div class="p-5">
+                        
+                        <div class="flex gap-2 mb-4">
+                            <select id="edit-expense-payer" class="w-1/4 px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:border-muji-accent focus:ring-1 focus:ring-muji-accent">
+                                <option value="小戴">小戴</option>
+                                <option value="佳欣">佳欣</option>
+                                <option value="佳萱">佳萱</option>
+                                <option value="玟廷">玟廷</option>
+                            </select>
+                            <select id="edit-expense-type" class="w-1/4 px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:border-muji-accent focus:ring-1 focus:ring-muji-accent">
+                                <option value="split">公費</option>
+                                <option value="private">私費</option>
+                            </select>
+                            <input type="date" id="edit-expense-date" class="flex-1 px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-xs text-gray-500 text-center focus:outline-none focus:border-muji-accent focus:ring-1 focus:ring-muji-accent">
                         </div>
 
-                        <div class="relative flex-1">
-                            <input type="number" id="edit-expense-rate" placeholder="匯率" step="0.0001" class="w-full px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-500 dark:text-gray-300 text-center focus:outline-none focus:border-muji-accent select-text" oninput="calcTwdInEdit()" onfocus="this.select()">
-                            <span class="absolute right-2 top-2.5 text-[10px] text-gray-400 pointer-events-none">匯率</span>
+                        <div class="mb-4">
+                            <label class="block text-[10px] text-gray-400 mb-1 ml-1">品項名稱</label>
+                            <input type="text" id="edit-expense-item" placeholder="品項名稱" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-100 focus:outline-none focus:border-muji-accent focus:ring-1 focus:ring-muji-accent select-text">
                         </div>
 
-                        <div id="edit-qty-wrapper" class="hidden w-16 relative shrink-0">
-                            <input type="number" id="edit-expense-qty" placeholder="1" class="w-full px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-100 text-center focus:outline-none focus:border-muji-accent select-text">
-                            <span class="absolute right-2 top-2.5 text-[10px] text-gray-400 pointer-events-none">個</span>
+                        <div class="flex gap-2 items-end">
+                            <div class="flex-1">
+                                <label class="block text-[10px] text-gray-400 mb-1 ml-1">日幣金額</label>
+                                <div class="relative">
+                                    <input type="number" id="edit-expense-price" placeholder="0" class="w-full px-3 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-lg font-bold text-gray-700 dark:text-gray-100 focus:outline-none focus:border-muji-accent focus:ring-1 focus:ring-muji-accent select-text font-mono" oninput="calcTwdInEdit()" onfocus="this.select()">
+                                    <span class="absolute right-3 top-2.5 text-xs text-gray-400 pointer-events-none">JPY</span>
+                                </div>
+                            </div>
+
+                            <div class="w-20">
+                                <label class="block text-[10px] text-gray-400 mb-1 ml-1 text-center">匯率</label>
+                                <input type="number" id="edit-expense-rate" step="0.0001" class="w-full px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm text-center text-gray-500 focus:outline-none focus:border-muji-accent focus:ring-1 focus:ring-muji-accent" oninput="calcTwdInEdit()" onfocus="this.select()">
+                            </div>
+
+                            <div id="edit-qty-wrapper" class="hidden w-16">
+                                <label class="block text-[10px] text-gray-400 mb-1 ml-1 text-center">數量</label>
+                                <div class="relative">
+                                    <input type="number" id="edit-expense-qty" value="1" class="w-full px-1 py-2 bg-gray-50 dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-lg text-sm font-bold text-center text-gray-700 dark:text-gray-100 focus:outline-none focus:border-muji-accent focus:ring-1 focus:ring-muji-accent" onfocus="this.select()">
+                                </div>
+                            </div>
                         </div>
                         
                         <input type="hidden" id="edit-expense-twd">
                     </div>
 
-                </div>
-                <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 bg-gray-50 dark:bg-stone-900 rounded-b-xl">
-                    
-                    <label class="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm font-bold">
-                        <i class="fas fa-camera"></i>
-                        <span id="edit-photo-label" class="text-xs whitespace-nowrap">照片</span>
-                        <input type="file" id="edit-expense-photo" accept="image/*" class="hidden" onchange="document.getElementById('edit-photo-label').innerText = '已選'; document.getElementById('edit-photo-label').classList.add('text-muji-accent');">
-                    </label>
+                    <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex gap-3 bg-gray-50 dark:bg-stone-900 shrink-0">
+                        <label class="flex items-center justify-center gap-2 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition shrink-0">
+                            <i class="fas fa-camera text-lg"></i>
+                            <input type="file" id="edit-expense-photo" accept="image/*" class="hidden" onchange="document.getElementById('edit-photo-text').innerText = '已選'; this.parentElement.classList.add('ring-2','ring-muji-accent');">
+                            <span id="edit-photo-text" class="text-xs font-bold">照片</span>
+                        </label>
 
-                    <button type="button" onclick="saveExpenseEdit()" class="flex-1 px-4 py-2.5 bg-muji-accent text-white rounded-lg text-sm font-bold shadow-sm hover:opacity-90 transition flex items-center justify-center gap-2">
-                        <i class="fas fa-check"></i> 儲存
-                    </button>
+                        <button type="button" onclick="saveExpenseEdit()" class="flex-1 px-4 py-3 bg-muji-accent text-white rounded-xl text-base font-bold shadow-md hover:opacity-90 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-check"></i> 儲存
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2477,6 +2488,24 @@
                 modal.querySelector('div').classList.add('scale-100'); 
             }, 10); 
         }
+        // --- 鍵盤避讓邏輯 (當輸入框聚焦時，將該欄位捲動到畫面中央) ---
+        function setupAutoScrollForModal() {
+            const modal = document.getElementById('expense-edit-modal');
+            const inputs = modal.querySelectorAll('input, select');
+            
+            inputs.forEach(input => {
+                // 移除舊的監聽器 (避免重複綁定)
+                input.onfocus = null; 
+                
+                input.addEventListener('focus', function() {
+                    // 延遲 300ms 等待鍵盤完全彈出
+                    setTimeout(() => {
+                        // 使用平滑捲動，將該輸入框捲動到視窗中央
+                        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                });
+            });
+        }
 
 // --- 自動計算台幣 (當日幣或匯率變動時觸發) ---
         function calcTwdInEdit() {
@@ -3128,6 +3157,22 @@
             
             // 6. 預設分類為「私費」
             document.getElementById('edit-expense-type').value = 'private'; 
+            
+            // 7. 顯示視窗
+            modal.classList.remove('hidden');
+            setTimeout(() => { 
+                modal.classList.remove('opacity-0'); 
+                // 注意：因為 HTML 結構變了，原本 scale 的動畫對象要改一下，或是直接簡化
+                // 簡單寫法：
+                const card = modal.querySelector('.relative'); // 抓取裡面的卡片
+                if(card) {
+                    card.classList.remove('scale-95');
+                    card.classList.add('scale-100');
+                }
+            }, 10);
+
+            // ★★★ 新增：啟動自動捲動監聽 ★★★
+            setupAutoScrollForModal();
         }
     // --- 5. 開啟新增/編輯視窗 ---
     // --- 必買清單分類管理系統 ---
