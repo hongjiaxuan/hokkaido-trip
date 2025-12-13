@@ -925,7 +925,7 @@
                             </button>
                         </div>
                     </div>
-
+                    
                     <div class="border-t border-gray-100 dark:border-gray-700 dark:border-gray-700"></div>
                     <div>
                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">資料備份與轉移</h4>
@@ -942,10 +942,18 @@
                         </div>
                         <p class="text-[10px] text-gray-400 mt-2 text-center">下載的 JSON 檔案可用於新手機或電腦還原完整行程。</p>
                     </div>
+                  
+                    <div class="border-t border-gray-100 dark:border-gray-700"></div>
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">使用者設定</h4>
+                        <div class="bg-gray-50 dark:bg-stone-900 border border-gray-100 dark:border-gray-700 rounded-lg p-3">
+                            <p class="text-[10px] text-gray-400 mb-3">點擊頭像選擇預設付款人 (目前：<span id="current-default-user" class="font-bold text-muji-accent">未設定</span>)</p>
+                            <div id="user-selector-container" class="flex justify-between items-center px-2"></div>
+                        </div>
+                    </div>
 
                     <div class="border-t border-gray-100 dark:border-gray-700"></div>
-
-                    <div>
+                      <div>
                         <h4 class="text-xs font-bold text-red-300 uppercase tracking-wider mb-3">重置與清除</h4>
                         <div class="space-y-2">
                             <button onclick="resetItinerary()" class="w-full text-left px-4 py-3 bg-red-50 text-red-500 rounded-lg text-xs font-bold hover:bg-red-100 transition flex justify-between items-center">
@@ -1105,8 +1113,17 @@
 
     <!-- JAVASCRIPT -->
     <script>
+    // --- 使用者設定 (頭像設定) ---
+    const APP_USERS = [
+        { name: '小戴', img: './images/dai.jpg' },
+        { name: '佳欣', img: './images/shin.jpg' },
+        { name: '佳萱', img: './images/shuan.jpg' },
+        { name: '玟廷', img: './images/ting.jpg' }
+    ];
+    
     // --- 設定視窗控制 ---
         function openSettingsModal() {
+            renderUserSelector();
             const modal = document.getElementById('settings-modal');
             modal.classList.remove('hidden');
             setTimeout(() => {
@@ -1125,6 +1142,42 @@
                 modal.classList.add('hidden');
             }, 250);
         }
+        // --- 使用者設定邏輯 ---
+
+        // 1. 渲染使用者選擇器 (在開啟設定視窗時呼叫)
+        function renderUserSelector() {
+            const container = document.getElementById('user-selector-container');
+            const currentLabel = document.getElementById('current-default-user');
+            
+            // 讀取目前設定，預設為 '小戴'
+            const defaultUser = localStorage.getItem('hk_default_user') || '小戴';
+            if(currentLabel) currentLabel.innerText = defaultUser;
+
+            let html = '';
+            APP_USERS.forEach(user => {
+                const isSelected = user.name === defaultUser;
+                // 選中時顯示外框 (Ring)
+                const activeClass = isSelected 
+                    ? 'ring-2 ring-offset-2 ring-muji-accent dark:ring-offset-gray-800 scale-110 opacity-100' 
+                    : 'opacity-60 hover:opacity-100 grayscale hover:grayscale-0';
+                
+                html += `
+                <button onclick="setDefaultUser('${user.name}')" class="flex flex-col items-center gap-1 transition-all duration-200 transform ${activeClass}">
+                    <img src="${user.img}" class="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600 shadow-sm">
+                    <span class="text-[10px] font-bold text-gray-600 dark:text-gray-300">${user.name}</span>
+                </button>`;
+            });
+            
+            if(container) container.innerHTML = html;
+        }
+
+        // 2. 設定預設使用者 (點擊頭像觸發)
+        function setDefaultUser(name) {
+            localStorage.setItem('hk_default_user', name);
+            renderUserSelector(); // 重新渲染以更新選取狀態
+            showToast(`預設付款人已改為：${name}`, 'success');
+        }
+
     // --- 系統備份與還原功能 ---
 
         // 1. 匯出完整備份 (JSON) - 修正版
@@ -2308,6 +2361,7 @@
             currentExpenseId = null; // 新增模式
             
             // 1. 清空欄位
+            const defaultPayer = localStorage.getItem('hk_default_user') || '小戴';
             document.getElementById('edit-expense-payer').value = '小戴';
             document.getElementById('edit-expense-type').value = 'split';
             document.getElementById('edit-expense-item').value = '';
