@@ -85,8 +85,8 @@
         .checklist-item { cursor: pointer; user-select: none; }
         .checklist-item:active { background-color: #f3f4f6; }
         /* Toast Notification 彈出通知*/
-        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; pointer-events: none; }
-        .toast { background: rgba(45, 55, 72, 0.95); color: white; padding: 12px 20px; border-radius: 50px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-20px); transition: all 0.3s ease; text-align: center; backdrop-filter: blur(4px); pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column;align-items: center; gap: 10px; width: 90%; max-width: 350px; pointer-events: none; }
+        .toast { background: rgba(45, 55, 72, 0.95); color: white; padding: 8px 16px; border-radius: 50px; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-20px); transition: all 0.2s ease; text-align: center; backdrop-filter: blur(4px); pointer-events: auto; display: inline-flex; width: auto;max-width: 80%;align-items: center; justify-content: center; gap: 6px; }
         .toast.show { opacity: 1; transform: translateY(0); }
         .toast.error { background: rgba(220, 38, 38, 0.95); }
         .toast.success { background: rgba(22, 163, 74, 0.95); }
@@ -148,9 +148,9 @@
                 <button onclick="openSettingsModal()" class="w-8 h-8 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-100 transition shadow-sm">
                     <i class="fas fa-cog"></i>
                 </button>
-                <div class="w-8 h-8 bg-muji-accent rounded-full flex items-center justify-center text-white shadow-sm cursor-pointer" onclick="showToast('歡迎來到北海道！', 'info')">
+                <div id="header-user-icon" class="w-8 h-8 bg-muji-accent rounded-full flex items-center justify-center text-white shadow-sm cursor-pointer overflow-hidden transition-transform active:scale-90" onclick="showToast('歡迎來到北海道！', 'info')">
                     <i class="fas fa-snowflake animate-pulse"></i>
-                </div>
+                </div>  
             </div>
         </header>
         <!-- Main Content -->
@@ -907,6 +907,15 @@
                 
                 <div class="p-5 space-y-6">
                     <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">使用者設定</h4>
+                        <div class="bg-gray-50 dark:bg-stone-900 border border-gray-100 dark:border-gray-700 rounded-lg p-3">
+                            <p class="text-[10px] text-gray-400 mb-3">點擊頭像選擇使用者 (目前：<span id="current-default-user" class="font-bold text-muji-accent">未設定</span>)</p>
+                            <div id="user-selector-container" class="flex justify-between items-center px-2"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-100 dark:border-gray-700"></div>
+                    <div>
                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">外觀設定</h4>
                         <div class="flex items-center justify-between bg-gray-50 dark:bg-stone-900 dark:border-stone-700 dark:text-white dark:border-gray-600 dark:bg-stone-900 dark:border-stone-700 p-3 rounded-lg border border-gray-100 dark:border-gray-700 dark:border-gray-600">
                             <div class="flex items-center gap-3">
@@ -943,14 +952,7 @@
                         <p class="text-[10px] text-gray-400 mt-2 text-center">下載的 JSON 檔案可用於新手機或電腦還原完整行程。</p>
                     </div>
                   
-                    <div class="border-t border-gray-100 dark:border-gray-700"></div>
-                    <div>
-                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">使用者設定</h4>
-                        <div class="bg-gray-50 dark:bg-stone-900 border border-gray-100 dark:border-gray-700 rounded-lg p-3">
-                            <p class="text-[10px] text-gray-400 mb-3">點擊頭像選擇預設付款人 (目前：<span id="current-default-user" class="font-bold text-muji-accent">未設定</span>)</p>
-                            <div id="user-selector-container" class="flex justify-between items-center px-2"></div>
-                        </div>
-                    </div>
+
 
                     <div class="border-t border-gray-100 dark:border-gray-700"></div>
                       <div>
@@ -1120,6 +1122,25 @@
         { name: '佳萱', img: './images/shuan.jpg' },
         { name: '玟廷', img: './images/ting.jpg' }
     ];
+    // --- 更新 Header 頭像 ---
+    function updateHeaderAvatar() {
+        const container = document.getElementById('header-user-icon');
+        if (!container) return;
+
+        // 1. 讀取目前設定的使用者
+        const currentName = localStorage.getItem('hk_default_user') || '小戴';
+        
+        // 2. 從設定檔中找到對應的圖片資料
+        const userObj = APP_USERS.find(u => u.name === currentName);
+
+        if (userObj && userObj.img) {
+            // 3. 如果有圖片，就換成 img 標籤
+            container.innerHTML = `<img src="${userObj.img}" class="w-full h-full object-cover" alt="${currentName}">`;
+        } else {
+            // 4. 如果找不到 (防呆)，維持原本的雪花
+            container.innerHTML = `<i class="fas fa-snowflake animate-pulse"></i>`;
+        }
+    }
     
     // --- 設定視窗控制 ---
         function openSettingsModal() {
@@ -1171,13 +1192,16 @@
             if(container) container.innerHTML = html;
         }
 
-        // 2. 設定預設使用者 (點擊頭像觸發)
         function setDefaultUser(name) {
             localStorage.setItem('hk_default_user', name);
-            renderUserSelector(); // 重新渲染以更新選取狀態
-            showToast(`預設付款人已改為：${name}`, 'success');
-        }
+            renderUserSelector(); 
+            showToast(`使用者已改為：${name}`, 'success');
 
+            // ★★★ 新增：同步更新錢包頁面上的下拉選單 ★★★
+            const inlinePayer = document.getElementById('expense-payer');
+            if(inlinePayer) inlinePayer.value = name;
+            updateHeaderAvatar();
+        }
     // --- 系統備份與還原功能 ---
 
         // 1. 匯出完整備份 (JSON) - 修正版
@@ -1470,7 +1494,7 @@
             setupNav();
             renderDateSelector(); 
             renderPlan();
-
+            updateHeaderAvatar(); 
             setInterval(updateRealtimeHighlight, 60000);
             document.querySelectorAll('input[type="number"]').forEach(input => {
                 input.addEventListener('focus', function() { this.select(); });
@@ -1483,7 +1507,7 @@
         // --- CLOUD SYNC CONFIG (雲端同步設定) ---
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxHLVR3OKM4qFoGzqnITcN9kDJq12CEpPyY4b0hn2Frwez4avJbFEasZiVQDKNjvT9K/exec";
 
-        // 讀取雲端資料（修復版本）
+        // 讀取雲端資料
         async function loadFromCloud() {
             if (!GAS_API_URL) {
                 console.log('雲端同步已禁用');
@@ -1584,7 +1608,7 @@
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => { toast.remove(); }, 300);
-            }, 3000);
+            }, 2000);
         }
 
         // --- ITINERARY DATA (Updated with splits and moves) ---
@@ -1672,7 +1696,6 @@
         document.querySelectorAll('input[type="number"]').forEach(input => {
             input.addEventListener('focus', function() { this.select(); });
         });
-        loadFromCloud();
         // --- 容量檢測與管理 ---
         function checkStorageSpace() {
             let total = 0;
@@ -2147,6 +2170,7 @@
         function switchToEdit() { closeViewModal(); setTimeout(() => { openEditModal(currentDayIdx, currentEvtIdx); }, 300); }
         
         function initWallet() { 
+            // 1. 匯率與日期設定 (原程式碼)
             const savedRate = localStorage.getItem('hk_rate_v1');
             const lastFetch = localStorage.getItem('hk_rate_date');
             const today = new Date().toDateString();
@@ -2156,6 +2180,15 @@
                 dateInput.valueAsDate = new Date();
             }
 
+            // ★★★ 2. 新增：載入預設付款人到「頁面上的輸入框」 ★★★
+            // 這是修正 "錢包記帳畫面未變動" 的關鍵
+            const defaultUser = localStorage.getItem('hk_default_user') || '小戴';
+            const inlinePayer = document.getElementById('expense-payer'); // 注意 ID 是 expense-payer (非 edit-...)
+            if (inlinePayer) {
+                inlinePayer.value = defaultUser;
+            }
+
+            // 3. 匯率顯示 (原程式碼)
             if (savedRate) {
                 document.getElementById('exchange-rate').value = savedRate;
             }
@@ -2172,7 +2205,6 @@
             document.getElementById('jpy-input').addEventListener('input', calculateRate);
             document.getElementById('exchange-rate').addEventListener('input', calculateRate);
         }
-
         function fetchExchangeRate(manual = false) {
             const statusEl = document.getElementById('rate-update-time');
             if(manual) statusEl.innerText = "更新中...";
@@ -2360,33 +2392,41 @@
         function openExpenseModal() {
             currentExpenseId = null; // 新增模式
             
-            // 1. 清空欄位
-            const defaultPayer = localStorage.getItem('hk_default_user') || '小戴';
-            document.getElementById('edit-expense-payer').value = '小戴';
-            document.getElementById('edit-expense-type').value = 'split';
+            // 1. 讀取預設付款人 (設定功能連動)
+            const payerSelect = document.getElementById('edit-expense-payer');
+            const defaultUser = localStorage.getItem('hk_default_user') || '小戴';
+            if (payerSelect) payerSelect.value = defaultUser;
+
+            // 2. 重置其他欄位
+            document.getElementById('edit-expense-type').value = 'split'; // 預設公費
             document.getElementById('edit-expense-item').value = '';
             document.getElementById('edit-expense-price').value = '';
             
-            // ★★★ 2. 強制隱藏數量欄位 (還原介面) ★★★
-            document.getElementById('edit-qty-wrapper').classList.add('hidden');
+            // ★★★ 3. 強制隱藏數量欄位 (一般記帳不需要) ★★★
+            const qtyWrapper = document.getElementById('edit-qty-wrapper');
+            if(qtyWrapper) qtyWrapper.classList.add('hidden');
             document.getElementById('edit-expense-qty').value = '1'; 
 
-            // 3. 匯率與日期設定
+            // 4. 匯率與日期設定
             const currentRate = localStorage.getItem('hk_rate_v1') || 0.22;
             document.getElementById('edit-expense-rate').value = currentRate;
             document.getElementById('edit-expense-twd').value = '';
             
             document.getElementById('edit-expense-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('edit-expense-photo').value = '';
-            const label = document.getElementById('edit-photo-label');
-            if(label) label.innerText = '更新照片';
-
-            // 4. 設定標題
-            const modal = document.getElementById('expense-edit-modal');
-            const title = modal.querySelector('h3');
-            if(title) title.innerText = "新增支出";
             
-            // 5. 顯示動畫
+            // 5. 照片欄位重置
+            document.getElementById('edit-expense-photo').value = '';
+            const photoText = document.getElementById('edit-photo-text');
+            if(photoText) photoText.innerText = '照片';
+            // 移除選取時的綠色外框
+            const photoLabel = document.querySelector('#edit-expense-photo').parentElement;
+            if(photoLabel) photoLabel.classList.remove('ring-2', 'ring-muji-accent');
+
+            // 6. 設定標題
+            const modal = document.getElementById('expense-edit-modal');
+            modal.querySelector('h3').innerText = "新增支出";
+            
+            // 7. 顯示視窗
             modal.classList.remove('hidden');
             setTimeout(() => { 
                 modal.classList.remove('opacity-0'); 
