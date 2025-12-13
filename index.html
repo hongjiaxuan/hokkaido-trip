@@ -53,6 +53,12 @@
 
     <style>
         body { -webkit-tap-highlight-color: transparent; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+        body.modal-open {
+            overflow: hidden !important;
+            height: 100vh !important;
+            position: fixed; /* 強制固定，防止 iOS 橡皮筋回彈 */
+            width: 100%;
+        }
         /* 隱藏滾動條 */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -2527,20 +2533,26 @@
             }
         }
 
-        function closeExpenseEditModal() { 
-            const modal = document.getElementById('expense-edit-modal'); 
-            modal.classList.add('opacity-0'); 
-            modal.querySelector('div').classList.remove('scale-100'); 
-            modal.querySelector('div').classList.add('scale-95'); 
-            setTimeout(() => { 
-                modal.classList.add('hidden'); 
-                currentExpenseId = null; 
+        function closeExpenseEditModal() {
+            const modal = document.getElementById('expense-edit-modal');
+            
+            // 1. 動畫效果：淡出 + 縮小
+            modal.classList.add('opacity-0');
+            const card = modal.querySelector('.relative');
+            if(card) {
+                card.classList.remove('scale-100');
+                card.classList.add('scale-95');
+            }
+            
+            // 2. 延遲後隱藏
+            setTimeout(() => {
+                modal.classList.add('hidden');
                 
-                // ★★★ 新增：如果是取消，也要清空暫存 ID ★★★
-                pendingShoppingId = null; 
+                // ★★★ 新增：解除背景鎖定 (讓 App 恢復可滑動) ★★★
+                document.body.classList.remove('modal-open'); 
                 
-            }, 250); 
-        }       
+            }, 200); // 等待動畫結束
+        }      
         // --- 儲存編輯或新增的記帳資料  --- 
         function saveExpenseEdit() { 
             // 1. 取得欄位資料
@@ -3157,14 +3169,12 @@
             
             // 6. 預設分類為「私費」
             document.getElementById('edit-expense-type').value = 'private'; 
-            
+
             // 7. 顯示視窗
             modal.classList.remove('hidden');
             setTimeout(() => { 
                 modal.classList.remove('opacity-0'); 
-                // 注意：因為 HTML 結構變了，原本 scale 的動畫對象要改一下，或是直接簡化
-                // 簡單寫法：
-                const card = modal.querySelector('.relative'); // 抓取裡面的卡片
+                const card = modal.querySelector('.relative');
                 if(card) {
                     card.classList.remove('scale-95');
                     card.classList.add('scale-100');
@@ -3173,6 +3183,8 @@
 
             // ★★★ 新增：啟動自動捲動監聽 ★★★
             setupAutoScrollForModal();
+            // ★★★ 新增：鎖定背景捲動 ★★★
+            document.body.classList.add('modal-open');
         }
     // --- 5. 開啟新增/編輯視窗 ---
     // --- 必買清單分類管理系統 ---
